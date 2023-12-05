@@ -1,0 +1,6 @@
+networks:
+  default: development
+  custom-rpc:
+    host: http://127.0.0.1
+    port: 4002
+    chainid: 86098
