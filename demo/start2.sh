@@ -38,7 +38,7 @@ do
     --nat extip:127.0.0.1 \
     --http --http.addr="127.0.0.1" --http.port=${RPCP} --http.corsdomain="*" --http.api="eth,debug,net,admin,web3,personal,txpool,ftm,dag" \
     --ws --ws.addr="127.0.0.1" --ws.port=${WSP} --ws.origins="*" --ws.api="eth,debug,net,admin,web3,personal,txpool,ftm,dag" \
-    --verbosity=4 --tracing --log.debug \
+    --verbosity=3 --tracing --log.debug \
     --allow-insecure-unlock --rpc --rpcapi="db,eth,net,web3,personal,txpool,miner" \
     $VALIDATOR_ID $VALIDATOR_PUBKEY \
     --validator.password "/home/devbox4/Desktop/fakepassword.txt" \

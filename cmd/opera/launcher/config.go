@@ -28,7 +28,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/gossip/emitter"
 	"github.com/Fantom-foundation/go-opera/gossip/gasprice"
 	"github.com/Fantom-foundation/go-opera/integration"
-	"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
+	//"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
 	futils "github.com/Fantom-foundation/go-opera/utils"
@@ -207,12 +207,14 @@ func loadAllConfigs(file string, cfg *config) error {
 func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 	switch {
 	case ctx.GlobalIsSet(FakeNetFlag.Name):
-		_, num, err := parseFakeGen(ctx.GlobalString(FakeNetFlag.Name))
-		if err != nil {
-			log.Crit("Invalid flag", "flag", FakeNetFlag.Name, "err", err)
-		}
-		return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
-	case ctx.GlobalIsSet(GenesisFlag.Name):
+	//  legopowa modification, comment this section out to --genesis load block properly, you'll need --fakenet 1/3 flag
+	// 	_, num, err := parseFakeGen(ctx.GlobalString(FakeNetFlag.Name))
+	// 	if err != nil {
+	// 		log.Crit("Invalid flag", "flag", FakeNetFlag.Name, "err", err)
+	// 	}
+	// 	return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000), futils.ToFtm(500000))
+	// case ctx.GlobalIsSet(GenesisFlag.Name):
+		// comment section out up to here
 		genesisPath := ctx.GlobalString(GenesisFlag.Name)
 
 		f, err := os.Open(genesisPath)

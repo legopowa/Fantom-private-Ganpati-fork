@@ -32,7 +32,7 @@ var (
 	}
 
 	mainnetHeader = genesis.Header{
-		GenesisID:   hash.HexToHash("0x4a53c5445584b3bfc20dbfb2ec18ae20037c716f3ba2d9e1da768a9deca17cb4"),
+		GenesisID:   hash.HexToHash("0x3202b36e114a731fd12232eabfef07f3b37695c21220b7b7dce89adc40baafdb"),
 		NetworkID:   opera.MainNetworkID,
 		NetworkName: "main",
 	}
@@ -45,12 +45,12 @@ var (
 
 	AllowedOperaGenesis = []GenesisTemplate{
 		{
-			Name:   "Mainnet-5577 with pruned MPT",
+			Name:   "Ganpati test",
 			Header: mainnetHeader,
 			Hashes: genesis.Hashes{
-				genesisstore.EpochsSection(0): hash.HexToHash("0x945d8084b4e6e1e78cfe9472fefca3f6ecc7041765dfed24f64e9946252f569a"),
-				genesisstore.BlocksSection(0): hash.HexToHash("0xe3ec041f3cca79928aa4abef588b48e96ff3cfa3908b2268af3ac5496c722fec"),
-				genesisstore.EvmSection(0):    hash.HexToHash("0x12dd52ac21fee5d76b47a64386e73187d5260e448e8044f38c6c73eaa627e4b5"),
+				genesisstore.EpochsSection(0): hash.HexToHash("0x21fdd1510ec7c0688b0adcf42fbe581804350d308ba704d9cdfac831cf196a22"),
+				genesisstore.BlocksSection(0): hash.HexToHash("0xb3c7885ff1103fd709c472d6972bc5f17116921c850360e6e7ea4614b84eb0a6"),
+				genesisstore.EvmSection(0):    hash.HexToHash("0x29c88313fbb6b746b51b8a35307ade7f042670c85d7fd9e6c1ba9f906ce6bef7"),
 			},
 		},
 		{

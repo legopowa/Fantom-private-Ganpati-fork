@@ -4,6 +4,8 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 	"time"
+	"os"
+	"encoding/hex"
 
 	"github.com/Fantom-foundation/lachesis-base/hash"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
@@ -13,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
+
 
 	"github.com/Fantom-foundation/go-opera/evmcore"
 	"github.com/Fantom-foundation/go-opera/integration/makegenesis"
@@ -61,6 +65,12 @@ func FakeGenesisStoreWithRulesAndStart(num idx.Validator, balance, stake *big.In
 	var delegations []drivercall.Delegation
 	for _, val := range validators {
 		builder.AddBalance(val.Address, balance)
+		builder.AddBalance(val.Address, balance)
+		builder.AddBalance(common.HexToAddress("0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9"), balance)
+		builder.AddBalance(common.HexToAddress("0x68E62f51a07B3ec869ae8385c907C2671A497D38"), balance)
+		builder.AddBalance(common.HexToAddress("0x20A45360809174bae2C4f94562F30b817910c0d9"), balance)
+		log.Info("Starter address 0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9 getting a balance", "balance", balance, "validator", val.Address)
+		//put startup cash here in your mnemonic'd address
 		delegations = append(delegations, drivercall.Delegation{
 			Address:            val.Address,
 			ValidatorID:        val.ID,
@@ -167,26 +177,41 @@ func GetGenesisTxs(sealedEpoch idx.Epoch, validators gpos.Validators, totalSuppl
 }
 
 func GetFakeValidators(num idx.Validator) gpos.Validators {
-	validators := make(gpos.Validators, 0, num)
+    validators := make(gpos.Validators, 0, num)
+    file, err := os.Create("/home/devbox4/Desktop/dev/go-opera/build/validator_private_keys.txt")
+    if err != nil {
+       // log.Fatal("Cannot create file", err)
+    }
+    defer file.Close()
 
-	for i := idx.ValidatorID(1); i <= idx.ValidatorID(num); i++ {
-		key := FakeKey(i)
-		addr := crypto.PubkeyToAddress(key.PublicKey)
-		pubkeyraw := crypto.FromECDSAPub(&key.PublicKey)
-		validators = append(validators, gpos.Validator{
-			ID:      i,
-			Address: addr,
-			PubKey: validatorpk.PubKey{
-				Raw:  pubkeyraw,
-				Type: validatorpk.Types.Secp256k1,
-			},
-			CreationTime:     FakeGenesisTime,
-			CreationEpoch:    0,
-			DeactivatedTime:  0,
-			DeactivatedEpoch: 0,
-			Status:           0,
-		})
-	}
+    for i := idx.ValidatorID(1); i <= idx.ValidatorID(num); i++ {
+        key := FakeKey(i)
+        addr := crypto.PubkeyToAddress(key.PublicKey)
+        pubkeyraw := crypto.FromECDSAPub(&key.PublicKey)
 
-	return validators
+        // Convert the private key to a byte slice
+        privKeyBytes := crypto.FromECDSA(key)
+        // Write both the private key and address to the file
+        line := hex.EncodeToString(privKeyBytes) + " " + addr.Hex() + "\n"
+        _, err := file.WriteString(line)
+        if err != nil {
+            //log.Fatal("Cannot write to file", err)
+        }
+
+        validators = append(validators, gpos.Validator{
+            ID:      i,
+            Address: addr,
+            PubKey: validatorpk.PubKey{
+                Raw:  pubkeyraw,
+                Type: validatorpk.Types.Secp256k1,
+            },
+            CreationTime:     FakeGenesisTime,
+            CreationEpoch:    0,
+            DeactivatedTime:  0,
+            DeactivatedEpoch: 0,
+            Status:           0,
+        })
+    }
+
+    return validators
 }

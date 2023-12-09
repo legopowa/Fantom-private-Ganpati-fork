@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	MainNetworkID   uint64 = 0xfa
-	TestNetworkID   uint64 = 0xfa2
-	FakeNetworkID   uint64 = 0xfa3
+	MainNetworkID   uint64 = 0x15052
+	TestNetworkID   uint64 = 0x12755
+	FakeNetworkID   uint64 = 0x15052
 	DefaultEventGas uint64 = 28000
 	berlinBit              = 1 << 0
 	londonBit              = 1 << 1
@@ -180,11 +180,11 @@ func TestNetRules() Rules {
 
 func FakeNetRules() Rules {
 	return Rules{
-		Name:      "fake",
-		NetworkID: FakeNetworkID,
+		Name:      "main",
+		NetworkID: MainNetworkID,
 		Dag:       DefaultDagRules(),
-		Epochs:    FakeNetEpochsRules(),
-		Economy:   FakeEconomyRules(),
+		Epochs:    DefaultEpochsRules(),
+		Economy:   DefaultEconomyRules(),
 		Blocks: BlocksRules{
 			MaxBlockGas:             20500000,
 			MaxEmptyBlockSkipPeriod: inter.Timestamp(3 * time.Second),
