@@ -1,0 +1,82 @@
+=============== Dec 8, 2023 (PST) ===============
+20:20:23.088448 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:23.205909 db@open opening
+20:20:23.206388 version@stat F·[] S·0B[] Sc·[]
+20:20:23.258049 db@janitor F·2 G·0
+20:20:23.258956 db@open done T·52.980959ms
+20:20:24.596735 db@close closing
+20:20:24.597026 db@close done T·250.984µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:25.246761 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:25.246964 version@stat F·[] S·0B[] Sc·[]
+20:20:25.246984 db@open opening
+20:20:25.247040 journal@recovery F·1
+20:20:25.247080 journal@recovery recovering @1
+20:20:25.263042 memdb@flush created L0@2 N·1 S·270B "\x00h\xc2..\xbf\xfb\r,v1":"\x00h\xc2..\xbf\xfb\r,v1"
+20:20:25.263529 version@stat F·[1] S·270B[270B] Sc·[0.25]
+20:20:25.365635 db@janitor F·3 G·0
+20:20:25.365667 db@open done T·118.671844ms
+20:20:25.365835 memdb@flush N·0 S·0B
+20:20:25.365842 memdb@flush skipping
+20:20:25.365887 journal@remove removed @3
+20:20:25.365915 table@compaction range L-1 "":""
+20:20:25.365944 table@compaction L0·1 -> L1·0 S·270B Q·2
+20:20:25.398764 table@build created L1@6 N·1 S·270B "\x00h\xc2..\xbf\xfb\r,v1":"\x00h\xc2..\xbf\xfb\r,v1"
+20:20:25.398923 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:25.449624 table@compaction committed F~ S~ Ke·0 D·0 T·83.567893ms
+20:20:25.449726 db@close closing
+20:20:25.449842 db@close done T·115.95µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:27.383688 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:27.383975 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:27.383999 db@open opening
+20:20:27.384072 journal@recovery F·1
+20:20:27.401502 journal@recovery recovering @5
+20:20:27.423589 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:27.555421 db@janitor F·4 G·1
+20:20:27.555493 db@janitor removing table-2
+20:20:27.555609 db@open done T·171.599146ms
+20:20:28.338733 db@close closing
+20:20:28.338800 db@close done T·66.384µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:28.339232 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:28.339435 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:28.339455 db@open opening
+20:20:28.339517 journal@recovery F·1
+20:20:28.358036 journal@recovery recovering @7
+20:20:28.375312 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:28.526061 db@janitor F·3 G·0
+20:20:28.526103 db@open done T·186.636647ms
+20:20:28.526247 db@close closing
+20:20:28.526332 db@close done T·84.892µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:29.362826 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:29.363062 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:29.363084 db@open opening
+20:20:29.363194 journal@recovery F·1
+20:20:29.380395 journal@recovery recovering @9
+20:20:29.392729 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:29.549299 db@janitor F·3 G·0
+20:20:29.549350 db@open done T·186.235582ms
+20:20:30.178941 db@close closing
+20:20:30.179062 db@close done T·119.422µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:30.798687 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:30.798991 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:30.799026 db@open opening
+20:20:30.799103 journal@recovery F·1
+20:20:30.832943 journal@recovery recovering @11
+20:20:30.860065 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:30.968202 db@janitor F·3 G·0
+20:20:30.968246 db@open done T·169.207334ms
+20:20:31.395033 db@close closing
+20:20:31.395200 db@close done T·163.96µs
+=============== Dec 8, 2023 (PST) ===============
+20:20:31.395972 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:20:31.396253 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:31.396277 db@open opening
+20:20:31.396353 journal@recovery F·1
+20:20:31.431617 journal@recovery recovering @13
+20:20:31.477201 version@stat F·[0 1] S·270B[0B 270B] Sc·[0.00 0.00]
+20:20:31.632139 db@janitor F·3 G·0
+20:20:31.632187 db@open done T·235.896764ms

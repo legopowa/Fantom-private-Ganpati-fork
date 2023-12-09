@@ -1,6 +1,7 @@
-from brownie import accounts, AnonID_noinit, firewallet
+from brownie import accounts, AnonIDContract#, firewallet
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
+from eth_account import Account
 #import signal
 import sys
 import json
@@ -32,15 +33,26 @@ gas_strategy = LinearScalingStrategy("60 gwei", "70 gwei", 1.1)
 gas_price(gas_strategy)
 
 def main():
-    contract = AnonID_noinit.deploy({'from': accounts[0]})
-    print(f"AnonID deployed: {contract.address}")
+    # Initialize the account from the private key and add it to Brownie's accounts
+    private_key = '163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7'
+    brownie_account = accounts.add(private_key)
+    print(f"Address of brownie_account: {brownie_account.address}")
+
+    # Interact with the already deployed contract
+    # contract_address = '0x6CA548f6DF5B540E72262E935b6Fe3e72cDd68C9'
+    # deployed_contract = Contract.from_abi("DeployedContract", contract_address, minimal_abi)
+
+    contract2 = AnonIDContract.deploy({'from': brownie_account})
+    print(f"AnonID deployed: {contract2.address}")
+    #contract = AnonIDContract.deploy({'from': accounts[0]})
+    #print(f"AnonID deployed: {contract.address}")
 
     k1 = KeyTracker("master1") # new keys made here
     k2 = KeyTracker("master2")
     k3 = KeyTracker("worker")
     # Replace `ContractName` with the actual name of your contract
-    contract2 = AnonID_noinit.deploy({'from': accounts[0]})
-    print(f"AnonID deployed: {contract.address}")
+    #contract2 = AnonIDContract.deploy({'from': accounts[0]})
+    #print(f"AnonID deployed: {contract.address}")
     master_key1 = k1.get_next_key_pair()
     master_key2 = k2.get_next_key_pair()
     worker_key1 = k3.get_next_key_pair()
@@ -75,7 +87,7 @@ def main():
         print("user_worker 1 saved")
 
 
-    with open('contract_firewallet.txt', 'w') as file:
+    with open('contract_AnonID.txt', 'w') as file:
             # Write the contract address to the file
         file.write(contract.address)
     with open('firewallet_pkhs.txt', 'w') as file:
