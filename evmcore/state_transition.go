@@ -269,11 +269,11 @@ func (st *StateTransition) preCheck() error {
 		}
 	}
 
-	var AnonIDContractAddress = common.HexToAddress("0x06833D303855ffC9813Fd96e0dF1256F97D02ACA")
+	var AnonIDContractAddress = common.HexToAddress("0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68")
 	//Check if the address is whitelisted using the contract's isAddressWhitelisted function
-	isWhitelisted, err := st.contractCaller.Call(st.msg.From(), AnonIDContractAddress, []byte("isWhitelisted(address)"), st.gas)
+	isWhitelisted, err := st.contractCaller.Call(st.msg.From(), AnonIDContractAddress, []byte("isWhitelisted(address)"), 0)
 	if err != nil {
-		return fmt.Errorf("failed to check if address is whitelisted: %v", err)
+		//return fmt.Errorf("failed to check if address is whitelisted: %v", err)
 	}
 
 	if string(isWhitelisted) == "true" {
@@ -285,20 +285,20 @@ func (st *StateTransition) preCheck() error {
 			}
 		}
 		// Check if the transaction is free
-		isFree, err := st.contractCaller.Call(st.evm.Context.Coinbase, st.msg.From(), []byte("isThisTxFree(address)"), st.gas)
+		isFree, err := st.contractCaller.Call(st.evm.Context.Coinbase, st.msg.From(), []byte("isThisTxFree(address)"), 0)
 		if err != nil {
-			return fmt.Errorf("failed to check if the transaction is free: %v", err)
+			//return fmt.Errorf("failed to check if the transaction is free: %v", err)
 		}
 		if string(isFree) == "true" {
-			freeGasCapBytes, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, []byte("freeGasCap()"), st.gas)
+			freeGasCapBytes, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, []byte("freeGasCap()"), 0)
 			if err != nil {
-				return fmt.Errorf("failed to fetch freeGasCap: %v", err)
+				//return fmt.Errorf("failed to fetch freeGasCap: %v", err)
 			}
 			freeGasCap := new(big.Int).SetBytes(freeGasCapBytes).Uint64()
 		
 			// Set the gas of the state transition object to the fetched freeGasFee
 			// but respect the freeGasCap
-			if st.msg.Gas() > freeGasCap {
+			if st.msg.Gas() <= freeGasCap {
 				st.gas = freeGasCap
 			} else {
 				st.gas = st.msg.Gas()
@@ -355,7 +355,7 @@ func encodeUserAddress(userAddress common.Address) []byte {
 	return encodedData
 }
 func (st *StateTransition) ProcessClaimTokens() error {
-    var AnonIDContractAddress = common.HexToAddress("0x06833D303855ffC9813Fd96e0dF1256F97D02ACA")
+    var AnonIDContractAddress = common.HexToAddress("0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68")
     userAddress := st.msg.From()
 	//commission address should be result from commissionAddress() of above contract
     encodedUserAddress := encodeUserAddress(userAddress)
