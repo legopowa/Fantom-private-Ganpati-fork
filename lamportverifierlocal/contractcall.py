@@ -1,7 +1,7 @@
 from web3 import Web3
 
 # Connect to local Ethereum node
-w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:4000'))
 
 # Check if the connection is successful
 if not w3.isConnected():
@@ -29,7 +29,7 @@ contract_abi = [
 ]
 
 # Address of the contract which has the commissionAddress function
-contract_address = '0xe69EBb155616d7cfcdc9Bb70E594aBb93671a8CD'
+contract_address = '0x06833D303855ffC9813Fd96e0dF1256F97D02ACA'
 
 # Create a contract object with the ABI and address
 contract = w3.eth.contract(address=contract_address, abi=contract_abi)
