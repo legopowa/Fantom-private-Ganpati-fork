@@ -161,10 +161,29 @@ contract AnonIDContract {
         emit QuotaSet(_address, _quota);
 
     }
+
+    function toHexString(address _address) internal pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_address)));
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(42);
+
+        str[0] = '0';
+        str[1] = 'x';
+
+        for (uint256 i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3+i*2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+
+        return string(str);
+    }
     function isThisTxFree(address _user) external returns (bool) {
         // Ensure only the coinbase can call this function
-        require(msg.sender == block.coinbase, "Only the current block's coinbase can call this function");
-
+        // THIS IS ROCK
+        require(
+            msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD, 
+            string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender)))
+        );
         // Check if the user is whitelisted
         if (!whitelist[_user]) {
             return false;

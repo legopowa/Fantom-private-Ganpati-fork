@@ -228,32 +228,39 @@ class LamportTest:
         _contract = AnonIDContract.at(contract_address)
         print("Contract referenced.")
         print('master_pkh_1', master_pkh_1)
-
+        private_key = '163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7'
+        brownie_account = accounts.add(private_key)
         current_keys = self.k1.load(self, "master1", master_pkh_1)
         current_pkh = self.k1.pkh_from_public_key(current_keys.pub)
         print('current pkh', current_pkh)
         next_keys = self.k1.get_next_key_pair()
         nextpkh = self.k1.pkh_from_public_key(next_keys.pub)
         #pairs = generate_address_value_pairs(10)
-        packed_pairs = solidity_pack_pairs(pairs)
+        #packed_pairs = solidity_pack_pairs(pairs)
+        #_newCap = int(300000)
+        numToBroadcast = int(1000000)
+        pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
+        paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 
 
-        packed_message = binascii.hexlify(packed_pairs) + nextpkh[2:].encode()
+        #packed_message = binascii.hexlify(_newCap) + nextpkh[2:].encode()
+        packed_message = paddednumToBroadcast.hex().encode() + nextpkh[2:].encode()
         callhash = hash_b(str(packed_message.decode()))
         sig = sign_hash(callhash, current_keys.pri) 
-        _contract.contractCallTest(
+        _contract.setFreeGasCap(
                             
-            pairs,
+            numToBroadcast,
             current_keys.pub,
-            nextpkh,
             sig,
-            {'from': str(accs[0])}
+            nextpkh,
+            {'from': brownie_account}
 
         )
+        #exit()
+        self.k1.save(trim = False)
         exit()
-        #self.k1.save(trim = False)
         master_pkh_1 = nextpkh
-    
+        
 
         verification_failed_filter = _contract.events.VerificationFailed.createFilter(fromBlock='latest')
 

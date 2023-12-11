@@ -1,0 +1,18 @@
+{
+  "86098": {
+    "AnonIDContract": [
+      "0xF669df9C236Ba10504bddDfcF3e5Bc183A35EECF",
+      "0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68",
+      "0x06833D303855ffC9813Fd96e0dF1256F97D02ACA"
+    ],
+    "DummyContract": [
+      "0x5028978163A7729B6C45d8eFAFd9f1215CBcE902",
+      "0xc1212ecafD2c893482046F70ed8Eff21223078dC"
+    ],
+    "WhitelistTest": [
+      "0x09c7F5BB03497990AAE0a40dF2A6c87a15aaD430",
+      "0xFAED56F3540DEf632D452edc2dba4e839a762A62",
+      "0x5Da5dEBd1b447cff710eBF0c05111Bf168bf4bcd"
+    ]
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "abi": [],
+  "allSourcePaths": {
+    "0": "contracts/The_Rock.sol"
+  },
+  "ast": {
+    "absolutePath": "contracts/The_Rock.sol",
+    "exportedSymbols": {
+      "TheRock": [
+        2
+      ]
+    },
+    "id": 3,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "32:23:0"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "TheRock",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 2,
+        "linearizedBaseContracts": [
+          2
+        ],
+        "name": "TheRock",
+        "nameLocation": "66:7:0",
+        "nodeType": "ContractDefinition",
+        "nodes": [],
+        "scope": 3,
+        "src": "57:56:0",
+        "usedErrors": [],
+        "usedEvents": []
+      }
+    ],
+    "src": "32:81:0"
+  },
+  "bytecode": "6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea26469706673582212209d3ae6870c425feeee582b5c0e67c4f9ed4130a787fad6c31276ba2d2ff5507464736f6c63430008150033",
+  "bytecodeSha1": "73df0a6f5d0123eb2b2db0faf62b602aa77c123a",
+  "compiler": {
+    "evm_version": "istanbul",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "version": "0.8.21+commit.d9974bed"
+  },
+  "contractName": "TheRock",
+  "coverageMap": {
+    "branches": {
+      "0": {}
+    },
+    "statements": {
+      "0": {}
+    }
+  },
+  "dependencies": [],
+  "deployedBytecode": "6080604052600080fdfea26469706673582212209d3ae6870c425feeee582b5c0e67c4f9ed4130a787fad6c31276ba2d2ff5507464736f6c63430008150033",
+  "deployedSourceMap": "57:56:0:-:0;;;;;",
+  "language": "Solidity",
+  "natspec": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "offset": [
+    57,
+    113
+  ],
+  "opcodes": "PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 SWAP14 GASPRICE 0xE6 DUP8 0xC TIMESTAMP PUSH0 0xEE 0xEE PC 0x2B 0x5C 0xE PUSH8 0xC4F9ED4130A787FA 0xD6 0xC3 SLT PUSH23 0xBA2D2FF5507464736F6C63430008150033000000000000 ",
+  "pcMap": {
+    "0": {
+      "offset": [
+        57,
+        113
+      ],
+      "op": "PUSH1",
+      "path": "0",
+      "value": "0x80"
+    },
+    "2": {
+      "fn": null,
+      "offset": [
+        57,
+        113
+      ],
+      "op": "PUSH1",
+      "path": "0",
+      "value": "0x40"
+    },
+    "4": {
+      "fn": null,
+      "offset": [
+        57,
+        113
+      ],
+      "op": "MSTORE",
+      "path": "0"
+    },
+    "5": {
+      "fn": null,
+      "offset": [
+        57,
+        113
+      ],
+      "op": "PUSH1",
+      "path": "0",
+      "value": "0x0"
+    },
+    "7": {
+      "fn": null,
+      "offset": [
+        57,
+        113
+      ],
+      "op": "DUP1",
+      "path": "0"
+    },
+    "8": {
+      "fn": null,
+      "offset": [
+        57,
+        113
+      ],
+      "op": "REVERT",
+      "path": "0"
+    }
+  },
+  "sha1": "6649ef55223ce67b98064ab3877dafe4dce7aa3f",
+  "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract TheRock {\n    // TheRock has a bright future.\n}",
+  "sourceMap": "57:56:0:-:0;;;;;;;;;;;;;;;;;;;",
+  "sourcePath": "contracts/The_Rock.sol",
+  "type": "contract"
+}
