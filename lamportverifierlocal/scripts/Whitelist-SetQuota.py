@@ -253,11 +253,11 @@ class LamportTest:
         _contract.setQuotaForAddress(
                             
             paddressToBroadcast,
-            '5',
+            '2',
             #current_keys.pub,
             #sig,
             #nextpkh,
-            {'from': brownie_account, 'gas_limit': 500000}
+            {'from': brownie_account, 'gas_limit': 299999}
 
         )
         #exit()

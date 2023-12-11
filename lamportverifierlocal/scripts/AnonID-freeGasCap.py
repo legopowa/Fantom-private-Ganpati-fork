@@ -41,7 +41,7 @@ CRC_END = b'</CRC>'
 
 
 
-gas_strategy = LinearScalingStrategy("60 gwei", "70 gwei", 1.1)
+gas_strategy = LinearScalingStrategy("120 gwei", "12000 gwei", 1.1)
 
 # if network.show_active() == "development":
 gas_price(gas_strategy)
@@ -138,7 +138,7 @@ class LamportTest:
         self.k3 = KeyTracker("oracle1")
         self.k4 = KeyTracker("master3")
         print("Initializing LamportTest...")
-        with open('contract.txt', 'r') as file:
+        with open('contract_AnonID.txt', 'r') as file:
             contract_address = file.read().strip()
         #print(contract_address)
         self.contract = AnonIDContract.at(contract_address)
@@ -221,7 +221,7 @@ class LamportTest:
         global master_pkh_2
         #global master_pkh_3
         print("Running 'can_test_key_functions'...")
-        with open('contract.txt', 'r') as file:
+        with open('contract_AnonID.txt', 'r') as file:
             contract_address = file.read()
             contract_address = contract_address.strip().replace('\n', '')  # Remove whitespace and newlines
 
@@ -238,7 +238,7 @@ class LamportTest:
         #pairs = generate_address_value_pairs(10)
         #packed_pairs = solidity_pack_pairs(pairs)
         #_newCap = int(300000)
-        numToBroadcast = int(1000000)
+        numToBroadcast = 300000
         pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 

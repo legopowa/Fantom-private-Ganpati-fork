@@ -14,7 +14,7 @@ contract AnonIDContract {
     // uint256 public hourlyUserTxLimit;
     // uint256 public hourlyValidatorTxLimit;
     // uint256 public hourlyExchangeTxLimit;
-    mapping(address => uint256[]) public userTxTimestamps;
+    //mapping(address => uint256[]) public userTxTimestamps;
     mapping(address => uint256) public hourlyTxQuota;
     address private _commissionAddress;
     address private SFCContractAddress;
@@ -32,6 +32,8 @@ contract AnonIDContract {
     mapping(address => bytes32) public addressToHashedID;
     Key[] public keys; // For iteration
     mapping(bytes32 => Key) public keyData; // For search
+    mapping(address => UserQuota) private userQuotaInfo;
+    mapping(address => uint256[500]) private userTxTimestamps; // Example with max 500 transactions
 
     event LogLastCalculatedHash(uint256 hash);
     event VerificationFailed(uint256 hashedData);
@@ -73,6 +75,11 @@ contract AnonIDContract {
     struct Key {
         KeyType keyType;
         bytes32 pkh;
+    }
+
+    struct UserQuota {
+        uint256 start; // Index of the oldest timestamp
+        uint256 count; // Current count of timestamps
     }
     function setCoinCommissionStepOne(
         bytes32[2][256] calldata currentpub,
@@ -178,39 +185,137 @@ contract AnonIDContract {
         return string(str);
     }
     function isThisTxFree(address _user) external returns (bool) {
-        // Ensure only the coinbase can call this function
-        // THIS IS ROCK
-        require(
-            msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD, 
-            string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender)))
-        );
+        // Ensure only TheRock can call this function
+        require(msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD,
+                string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender))));
+
         // Check if the user is whitelisted
         if (!whitelist[_user]) {
             return false;
         }
 
-        uint256[] storage timestamps = userTxTimestamps[_user];
-        emit TxRecorded(_user, block.timestamp);
+        // Return false if quota is zero
+        if (hourlyTxQuota[_user] == 0) {
+            return false;
+        }
 
+        UserQuota storage quotaInfo = userQuotaInfo[_user];
+        uint256[500] storage timestamps = userTxTimestamps[_user];
 
-        // If the user has reached their hourly quota, check the oldest timestamp
-        if (timestamps.length == hourlyTxQuota[_user]) {
-            if (block.timestamp - timestamps[0] <= 1 hours) {
-                // If the oldest transaction is within the last hour, the quota has been exceeded
+        // Check if quota is exceeded within the last hour
+        if (quotaInfo.count >= hourlyTxQuota[_user]) {
+            uint256 oldestTimestampIndex = quotaInfo.start;
+            if (block.timestamp - timestamps[oldestTimestampIndex] <= 1 hours) {
+                // Quota exceeded, as the oldest transaction is within the last hour
                 return false;
-            } else {
-                // Otherwise, remove the oldest timestamp to make space for the new one
-                for (uint i = 0; i < timestamps.length - 1; i++) {
-                    timestamps[i] = timestamps[i + 1];
-                }
-                timestamps.pop();
             }
+
+            // Move the start index forward as we will overwrite the oldest timestamp
+            quotaInfo.start = (quotaInfo.start + 1) % hourlyTxQuota[_user];
+        } else {
+            // Increment the count if the buffer is not full
+            quotaInfo.count++;
         }
 
         // Add the new transaction timestamp
-        timestamps.push(block.timestamp);
+        uint256 newIndex = (quotaInfo.start + quotaInfo.count - 1) % hourlyTxQuota[_user];
+        timestamps[newIndex] = block.timestamp;
+
+        emit TxRecorded(_user, block.timestamp);
         return true;
     }
+    // function isThisTxFree(address _user) external returns (bool) {
+    //     // Ensure only TheRock can call this function
+    //     require(msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD,
+    //             string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender))));
+
+    //     // Check if the user is whitelisted
+    //     if (!whitelist[_user]) {
+    //         return false;
+    //     }
+
+    //     // Return false if quota is zero
+    //     if (hourlyTxQuota[_user] == 0) {
+    //         return false;
+    //     }
+
+    //     // Get the array of timestamps for the user
+    //     uint256[] storage timestamps = userTxTimestamps[_user];
+
+    //     // Check if the user has made fewer transactions than the quota allows
+    //     if (timestamps.length < hourlyTxQuota[_user]) {
+    //         // User has not reached their quota yet, add the new timestamp
+    //         timestamps.push(block.timestamp);
+    //         emit TxRecorded(_user, block.timestamp);
+    //         return true;
+    //     }
+
+    //     // User has reached or exceeded their quota, check the timestamp for quota enforcement
+    //     if (block.timestamp - timestamps[0] <= 1 hours) {
+    //         // Quota exceeded, as the oldest transaction is within the last hour
+    //         return false;
+    //     }
+
+    //     // Remove the oldest timestamp and add the new one
+    //     removeOldestTimestamp(_user);
+    //     timestamps.push(block.timestamp);
+    //     emit TxRecorded(_user, block.timestamp);
+    //     return true;
+    // }
+
+    // function removeOldestTimestamp(address _user) internal {
+    //     uint256[] storage timestamps = userTxTimestamps[_user];
+    //     for (uint i = 0; i < timestamps.length - 1; i++) {
+    //         timestamps[i] = timestamps[i + 1];
+    //     }
+    //     timestamps.pop();
+    // }
+
+    // function removeOldestTimestamp(address _user) internal {
+    //     uint256[] storage timestamps = userTxTimestamps[_user];
+    //     for (uint i = 0; i < timestamps.length - 1; i++) {
+    //         timestamps[i] = timestamps[i + 1];
+    //     }
+    //     timestamps.pop();
+    // }
+
+// Add the toHexString function here if it's not already present in your contract
+
+
+    // function isThisTxFree(address _user) external returns (bool) {
+    //     // Ensure only the coinbase can call this function
+    //     // THIS IS ROCK
+    //     require(
+    //         msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD, 
+    //         string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender)))
+    //     );
+    //     // Check if the user is whitelisted
+    //     if (!whitelist[_user]) {
+    //         return false;
+    //     }
+
+    //     uint256[] storage timestamps = userTxTimestamps[_user];
+    //     emit TxRecorded(_user, block.timestamp);
+
+
+    //     // If the user has reached their hourly quota, check the oldest timestamp
+    //     if (timestamps.length >= hourlyTxQuota[_user]) {
+    //         if (block.timestamp - timestamps[0] <= 1 hours) {
+    //             // If the oldest transaction is within the last hour, the quota has been exceeded
+    //             return false;
+    //         } else {
+    //             // Otherwise, remove the oldest timestamp to make space for the new one
+    //             for (uint i = 0; i < timestamps.length - 1; i++) {
+    //                 timestamps[i] = timestamps[i + 1];
+    //             }
+    //             timestamps.pop();
+    //         }
+    //     }
+
+    //     // Add the new transaction timestamp
+    //     timestamps.push(block.timestamp);
+    //     return true;
+    // }
     // Remove an address from the whitelist
 // Remove an address from the whitelist
     function removeFromWhitelist(address _address) external {

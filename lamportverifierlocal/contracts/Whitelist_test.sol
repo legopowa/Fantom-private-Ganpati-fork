@@ -15,7 +15,7 @@ contract WhitelistTest {
     event ErrorCaught(string action, string error);
 
     constructor() {
-        systemContract = ISystemContract(0x79FC28acEDA0FC558Af3D0ec27460fc2A368AfF8);
+        systemContract = ISystemContract(0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97);
     }
 
     function addAddressToWhitelist(address _address, string memory anonID) public {

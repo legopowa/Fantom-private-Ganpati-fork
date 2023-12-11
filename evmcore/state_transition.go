@@ -18,6 +18,8 @@ package evmcore
 
 import (
 	"fmt"
+	//"os"
+	//encoding/hex"
 	"math"
 	"math/big"
 	"bytes"
@@ -247,101 +249,7 @@ func (st *StateTransition) buyGas() error {
 	// muck around place
 	//st.gas += 250000
 	// Pad the address to 32 bytes
-	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
-
-	//Function signature of isWhitelisted(address)
-	functionSignature := common.Hex2Bytes("3af32abf")  // This is the hex representation of the keccak256 hash of "isWhitelisted(address)"
-
-	// Concatenate the function signature with the padded address
-	data := append(functionSignature, paddedAddress...)
-
-	// Call the isWhitelisted function on the contract
-	var AnonIDContractAddress = common.HexToAddress("0x79FC28acEDA0FC558Af3D0ec27460fc2A368AfF8")
-	isWhitelisted, err := st.contractCaller.Call(st.msg.From(), AnonIDContractAddress, data, st.gas)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to check if address is whitelisted: %v. From: %v, Contract Address: %v, Data: %v, Gas: %v, isWhitelisted: %v",
-			err, st.msg.From().Hex(), AnonIDContractAddress.Hex(), common.Bytes2Hex(data), st.gas, isWhitelisted)
-		return fmt.Errorf(errMsg)
-	}
 	
-	//// this works
-	// functionSignature := common.Hex2Bytes("931742d3")
-
-	// // Contract address
-	// contractAddress := common.HexToAddress("0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68")
-
-	// // Call the commissionAddress function on the contract
-	// commissionAddress, err := st.contractCaller.Call(st.msg.From(), contractAddress, functionSignature, st.gas)
-	// if err != nil || len(commissionAddress) != 0 {
-	// 	// Handle the error or the empty return here
-	// 	addressString := hex.EncodeToString(commissionAddress)
-
-	// 	return fmt.Errorf(addressString)
-	// }
-	//// up to here
-
-	if len(isWhitelisted) == 32 && isWhitelisted[31] == 1 {
-		//return fmt.Errorf("gime error")
-		if st.IsClaimTokensInvoked() {
-			// If so, handle the claim logic
-			err := st.ProcessClaimTokens()
-			if err != nil {
-				// Handle error, revert transaction or whatever behavior you want
-			}
-		}
-		// Check if the transaction is free
-		// did gpt3 do this shit wtf
-		// paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
-
-		// functionSignature2 := common.Hex2Bytes("8775b01f")
-
-		// data2 := append(functionSignature2, paddedAddress2...)
-
-		// isFree, err := st.contractCaller.Call(st.evm.Context.Coinbase, st.msg.From(), data2, st.gas)
-		// if err == nil {
-		// 	return fmt.Errorf("failed to check if the transaction is free: %v. Details: {Coinbase: %s, From: %v, isFree: %v, Gas: %d}", err, st.evm.Context.Coinbase.Hex(), st.msg.From().Hex(), isFree, st.gas)
-
-		// 	//return fmt.Errorf("failed to check if the transaction is free: %v", err)
-		// }
-		paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
-
-		functionSignature2 := common.Hex2Bytes("8775b01f")  // Replace with the correct signature for 'isThisTxFree'
-
-		data2 := append(functionSignature2, paddedAddress2...)
-
-		var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
-
-		// Your existing call, but with TheRockAddress as the sender
-		isFree, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
-		if err != nil {
-			errMsg := fmt.Sprintf("Failed to check if the transaction is free: %v. Details: {TheRock: %s, From: %s, Gas: %d, Data: %s, isFree: %s}",
-				err, TheRockAddress.Hex(), st.msg.From().Hex(), st.gas, common.Bytes2Hex(data2), isFree)
-			return fmt.Errorf(errMsg)
-		}
-		if len(isFree) == 32 && isFree[31] == 1{
-			freeGasCapBytes, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, []byte("freeGasCap()"), st.gas)
-			if err == nil {
-				return fmt.Errorf("%v checking isFree: %s", err, isFree)
-			}
-			freeGasCap := new(big.Int).SetBytes(freeGasCapBytes).Uint64()
-		
-			// Set the gas of the state transition object to the fetched freeGasFee
-			// but respect the freeGasCap
-			if st.msg.Gas() <= freeGasCap {
-				//st.gas = freeGasCap
-				//st.gas = st.msg.Gas()
-				//gasBigInt := new(big.Int).SetUint64(st.msg.Gas())
-				refund := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-
-				st.state.AddBalance(st.msg.From(), refund)
-				st.state.AddBalance(st.msg.From(), refund)
-			} else {
-				//st.gas = st.msg.Gas()
-			}
-
-			return nil // Skip the buyGas if transaction is free for whitelisted
-		}
-	}
 	//else st.gas = st.msg.Gas()
 	//end muck around place
 	st.initialGas = st.msg.Gas()
@@ -414,7 +322,7 @@ func encodeUserAddress(userAddress common.Address) []byte {
 	return encodedData
 }
 func (st *StateTransition) ProcessClaimTokens() error {
-    var AnonIDContractAddress = common.HexToAddress("0x79FC28acEDA0FC558Af3D0ec27460fc2A368AfF8")
+    var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
     userAddress := st.msg.From()
 	//commission address should be result from commissionAddress() of above contract
     encodedUserAddress := encodeUserAddress(userAddress)
@@ -529,21 +437,160 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}, nil
 }
 
-func (st *StateTransition) refundGas(refundQuotient uint64) {
+func (st *StateTransition) refundGas(refundQuotient uint64)  {
 	// Apply refund counter, capped to a refund quotient
-	refund := st.gasUsed() / refundQuotient
-	if refund > st.state.GetRefund() {
-		refund = st.state.GetRefund()
-	}
-	st.gas += refund
 
-	// Return wei for remaining gas, exchanged at the original rate.
-	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.state.AddBalance(st.msg.From(), remaining)
+	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
+
+	//Function signature of isWhitelisted(address)
+	functionSignature := common.Hex2Bytes("3af32abf")  // This is the hex representation of the keccak256 hash of "isWhitelisted(address)"
+
+	// Concatenate the function signature with the padded address
+	data := append(functionSignature, paddedAddress...)
+
+	// Call the isWhitelisted function on the contract
+	var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
+	isWhitelisted, err := st.contractCaller.Call(st.msg.From(), AnonIDContractAddress, data, st.gas)
+	if err != nil {
+		//errMsg := fmt.Sprintf("Failed to check if address is whitelisted: %v. From: %v, Contract Address: %v, Data: %v, Gas: %v, isWhitelisted: %v",
+		//	err, st.msg.From().Hex(), AnonIDContractAddress.Hex(), common.Bytes2Hex(data), st.gas, isWhitelisted)
+		//return fmt.Errorf(errMsg)
+		st.state.AddBalance(st.msg.From(), big.NewInt(1))
+
+	}
+	
+	//// this works
+	// functionSignature := common.Hex2Bytes("931742d3")
+
+	// // Contract address
+	// contractAddress := common.HexToAddress("0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68")
+
+	// // Call the commissionAddress function on the contract
+	// commissionAddress, err := st.contractCaller.Call(st.msg.From(), contractAddress, functionSignature, st.gas)
+	// if err != nil || len(commissionAddress) != 0 {
+	// 	// Handle the error or the empty return here
+	// 	addressString := hex.EncodeToString(commissionAddress)
+
+	// 	return fmt.Errorf(addressString)
+	// }
+	//// up to here
+
+	if len(isWhitelisted) == 32 && isWhitelisted[31] == 1 {
+		//return fmt.Errorf("gime error")
+		st.state.AddBalance(st.msg.From(), big.NewInt(10))
+		if st.IsClaimTokensInvoked() {
+			// If so, handle the claim logic
+			err := st.ProcessClaimTokens()
+			if err != nil {
+				// Handle error, revert transaction or whatever behavior you want
+			}
+		}
+		// Check if the transaction is free
+		// did gpt3 do this shit wtf
+		// paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
+
+		// functionSignature2 := common.Hex2Bytes("8775b01f")
+
+		// data2 := append(functionSignature2, paddedAddress2...)
+
+		// isFree, err := st.contractCaller.Call(st.evm.Context.Coinbase, st.msg.From(), data2, st.gas)
+		// if err == nil {
+		// 	return fmt.Errorf("failed to check if the transaction is free: %v. Details: {Coinbase: %s, From: %v, isFree: %v, Gas: %d}", err, st.evm.Context.Coinbase.Hex(), st.msg.From().Hex(), isFree, st.gas)
+
+		// 	//return fmt.Errorf("failed to check if the transaction is free: %v", err)
+		// }
+		paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
+
+		functionSignature2 := common.Hex2Bytes("8775b01f")  // Replace with the correct signature for 'isThisTxFree'
+
+		data2 := append(functionSignature2, paddedAddress2...)
+
+		var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
+
+		// Your existing call, but with TheRockAddress as the sender
+		isFree, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
+		
+		// file, fileErr := os.Create("/home/devbox4/Desktop/isFree.txt")
+		// if fileErr != nil {
+		// 	// Handle file error
+		// 	//fmt.Println("Error opening file:", fileErr)
+		// 	//return
+		// }
+		// defer file.Close()
+	
+		// // Write formatted string to file
+		// // Adjust the formatting as per the types of isFree and err
+		// _, writeErr := fmt.Fprintf(file, "%s, %v, %d\n", isFree, isFree[31], isFree[31])
+		// if writeErr != nil {
+		// 	// Handle writing error
+		// 	//fmt.Println("Error writing to file:", writeErr)
+		// 	//return
+		// }
+		
+		if err != nil {
+			//errMsg := fmt.Sprintf("Failed to check if the transaction is free: %v. Details: {TheRock: %s, From: %s, Gas: %d, Data: %s, isFree: %v}",
+			//	err, TheRockAddress.Hex(), st.msg.From().Hex(), st.gas, common.Bytes2Hex(data2), isFree)
+			//return fmt.Errorf(errMsg)
+			st.state.AddBalance(st.msg.From(), big.NewInt(100))
+		}
+
+		if len(isFree) == 32 && isFree[31] == 0 {
+		//if isFree[31] == 0 {
+			st.state.AddBalance(st.msg.From(), big.NewInt(1000))
+
+		}
+		if len(isFree) == 32 && isFree[31] == 1 {
+		//if isFree[31] == 1 {
+			st.state.AddBalance(st.msg.From(), big.NewInt(10000))
+
+			functionSignature3 := common.Hex2Bytes("b889b2b7")
+			freeGasCapBytes, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature3, st.gas)
+			if err != nil {
+
+				//hexStr := hex.EncodeToString(freeGasCapBytes)
+				//return fmt.Errorf("%v checking freeGasCapBytes: %s", err, hexStr)
+			}
+			freeGasCap := new(big.Int).SetBytes(freeGasCapBytes).Uint64()
+		
+			// Set the gas of the state transition object to the fetched freeGasFee
+			// but respect the freeGasCap
+			if st.gasUsed() <= freeGasCap {
+				st.state.AddBalance(st.msg.From(), big.NewInt(100000))
+				//st.gas = freeGasCap
+				//st.gas = st.msg.Gas()
+				//gasBigInt := new(big.Int).SetUint64(st.msg.Gas())
+				//zerogas := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.Gas()), st.msg.GasPrice())
+				//zerogas := st.gasUsed()
+				//zerogas := st.gas//st.state.AddBalance(st.msg.From(), refund)
+				//st.gas += st.msg.Gas()//st.state.SubBalance(st.msg.From(), zerogas)
+				//
+				//return nil
+				//return fmt.Errorf("DID I JUST GET PAID AGAIN")
+				zerogas := st.gasUsed()
+				st.gas += zerogas
+				remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
+
+				st.state.AddBalance(st.msg.From(), remaining)
+				st.gp.AddGas(st.gas)
+
+			}	
+			//return nil // Skip the buyGas if transaction is free for whitelisted
+		}
+	} else {
+		refund := st.gasUsed() / refundQuotient
+		if refund > st.state.GetRefund() {
+			refund = st.state.GetRefund()
+		}
+		st.gas += refund
+
+		// Return wei for remaining gas, exchanged at the original rate.
+		remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
+		st.state.AddBalance(st.msg.From(), remaining)
 
 	// Also return remaining gas to the block gas counter so it is
 	// available for the next transaction.
-	st.gp.AddGas(st.gas)
+		st.gp.AddGas(st.gas)
+	} 
 }
 
 // gasUsed returns the amount of gas used up by the state transition.
