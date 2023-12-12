@@ -7,7 +7,7 @@ import hashlib
 import base64
 from web3 import Web3
 from web3.exceptions import InvalidAddress
-from brownie import network, web3, accounts, Wei, WhitelistTest, Contract
+from brownie import network, web3, accounts, Wei, WhitelistTest, AnonIDContract, Contract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_utils import encode_hex #, encode_single
@@ -41,7 +41,7 @@ CRC_END = b'</CRC>'
 
 
 
-gas_strategy = LinearScalingStrategy("120 gwei", "120000 gwei", 1.1)
+gas_strategy = LinearScalingStrategy("120 gwei", "1200 gwei", 1.1)
 
 # if network.show_active() == "development":
 gas_price(gas_strategy)
@@ -250,28 +250,70 @@ class LamportTest:
         
         callhash = hash_b(str(packed_message.decode()))
         #sig = sign_hash(callhash, current_keys.pri) 
-        _contract.setQuotaForAddress(
+        # _contract.addAddressToWhitelist(
                             
-            paddressToBroadcast,
-            '30',
-            #current_keys.pub,
-            #sig,
-            #nextpkh,
-            {'from': brownie_account, 'gas_limit': 299999}
+        #     paddressToBroadcast,
+        #     'blank',
+        #     #current_keys.pub,
+        #     #sig,
+        #     #nextpkh,
+        #     {'from': brownie_account}
+        # )
+        OperationResult_filter = _contract.events.OperationResult.createFilter(fromBlock='latest')
 
-        )
+        for event in OperationResult_filter.get_all_entries():
+            data = event['args']['success']
+            print(f"Operation Result: {data}")
+
+
+    # # Addresses of the deployed contracts
+    #     anonid_contract_address = '0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68'
+    #     whitelist_test_contract_address = '0x09c7F5BB03497990AAE0a40dF2A6c87a15aaD430'  # Replace with actual address
+        # Read the AnonID contract address from contract_AnonID.txt
+        with open('contract_AnonID.txt', 'r') as file:
+            anonid_contract_address = file.read().strip()
+        print(f"AnonID Contract Address: {anonid_contract_address}")
+
+        # Read the WhitelistTest contract address from whitelist_contract.txt
+        with open('whitelist_contract.txt', 'r') as file:
+            whitelist_test_contract_address = file.read().strip()
+        print(f"WhitelistTest Contract Address: {whitelist_test_contract_address}")
+
+
+        # Access the deployed contracts
+        anonid_contract = AnonIDContract.at(anonid_contract_address)
+        whitelist_test_contract = WhitelistTest.at(whitelist_test_contract_address)
+
+        # Address to be whitelisted
+        #paddressToBroadcast = 'Some_Ethereum_Address'  # Replace with actual address
+
+        # Perform a transaction
+        tx = whitelist_test_contract.addMinutesPlayed(paddressToBroadcast, 10, {'from': brownie_account})
+
+        # Capture events
+        whitelist_events = tx.events['MinutesPlayedIncremented']
+        #failed_events = tx.events['WhitelistAdditionFailed']
+        #error_events = tx.events['ErrorCaught']
+
+        # Process success events
+        for event in whitelist_events:
+            print(f"Address {event['user']} recieved {event['_minutes']} played minutes")
+
+        # Process failure events
+        #for event in failed_events:
+        #    print(f"Failed to whitelist {event['_address']}: {event['reason']}")
+
+        # Process error events
+        #for event in error_events:
+        #    print(f"Error in action {event['action']}: {event['error']}")
+
         #exit()
         #self.k1.save(trim = False)
         exit()
         master_pkh_1 = nextpkh
         
 
-        verification_failed_filter = _contract.events.VerificationFailed.createFilter(fromBlock='latest')
 
-        for event in verification_failed_filter.get_all_entries():
-            hashed_data = event['args']['hashedData']
-            print(f"Verification failed for hashed data: {hashed_data}")
-        
         address_value_pairs_filter = _contract.events.AddressValuePairsBroadcasted.createFilter(fromBlock='latest')
         for event in address_value_pairs_filter.get_all_entries():
             pairs = event['args']['pairs']
@@ -316,7 +358,7 @@ class LamportTest:
             {'from': str(accs[0])}    
         )
         #self.k2.save(trim = False)
-        self.k4.save(trim = False)
+        #self.k4.save(trim = False)
        
         #master_pkh_2 = nextpkh
         master_pkh_3 = mtk_pkh
@@ -428,7 +470,7 @@ class LamportTest:
             mtk_pkh[2:],
             {'from': str(accs[0])}    
         )
-        self.k1.save(trim = False)
+        #self.k1.save(trim = False)
 
         current_keys = self.k2.load(self, "master2", master_pkh_2)
         current_pkh = self.k2.pkh_from_public_key(current_keys.pub)
@@ -449,7 +491,7 @@ class LamportTest:
             mtk_pkh[2:],
             {'from': str(accs[0])}    
         )
-        self.k2.save(trim = False)
+        #self.k2.save(trim = False)
 
         ## If you load the same key twice it'll revert; this prevents you from 
         ## deleting the master keys used for the process as well (due to how you need

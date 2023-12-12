@@ -301,7 +301,7 @@ func (st *StateTransition) internal() bool {
 
 func (st *StateTransition) IsClaimTokensInvoked() bool {
     // Compute the function signature for claimTokens
-    claimSignature := crypto.Keccak256([]byte("claimGP()"))[:4]
+    claimSignature := common.Hex2Bytes("142eb8c8")
 
     // Check the start of the transaction data
     return bytes.HasPrefix(st.msg.Data(), claimSignature)
@@ -322,18 +322,37 @@ func encodeUserAddress(userAddress common.Address) []byte {
 	return encodedData
 }
 func (st *StateTransition) ProcessClaimTokens() error {
+
+	var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
     var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
     userAddress := st.msg.From()
 	//commission address should be result from commissionAddress() of above contract
-    encodedUserAddress := encodeUserAddress(userAddress)
-
+    //encodedUserAddress := encodeUserAddress(userAddress)
+	//hash function sig *
     // Fetch the values from the AnonID contract
-	lastClaim, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, append([]byte("lastClaim(address)"), encodedUserAddress...), st.gas)
+
+
+	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
+
+	//Function signature of isWhitelisted(address)
+	functionSignature := common.Hex2Bytes("5c16e15e")  // This is the hex representation of the keccak256 hash of "lastClaim(address)"
+
+	// Concatenate the function signature with the padded address
+	data := append(functionSignature, paddedAddress...)
+
+	lastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data, st.gas)
     if err != nil {
         return fmt.Errorf("failed to fetch lastClaim: %v", err)
     }
+	paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
-    lastlastClaim, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, append([]byte("lastLastClaim(address)"), encodedUserAddress...), st.gas)
+	//Function signature of isWhitelisted(address)
+	functionSignature2 := common.Hex2Bytes("4fbbc63f")  // This is the hex representation of the keccak256 hash of "lastLastClaim(address))"
+
+	// Concatenate the function signature with the padded address
+	data2 := append(functionSignature2, paddedAddress2...)
+
+    lastlastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
     if err != nil {
         return fmt.Errorf("failed to fetch lastlastClaim: %v", err)
     }
@@ -341,24 +360,48 @@ func (st *StateTransition) ProcessClaimTokens() error {
     lastClaimInt := new(big.Int).SetBytes(lastClaim)
     lastlastClaimInt := new(big.Int).SetBytes(lastlastClaim)
     amountToMint := new(big.Int).Sub(lastClaimInt, lastlastClaimInt)
+	// Define a new *big.Int for 10^18
+	weiMultiplier := new(big.Int)
+	weiMultiplier.SetString("1000000000000000000", 10) // 10^18
 
+	// Multiply amountToMint by 10^18 to convert it to Wei
+	amountToMintInWei := new(big.Int).Mul(amountToMint, weiMultiplier)
+	functionSignature3 := common.Hex2Bytes("8705d945") 
     // Fetch the coinCommission from the AnonID contract
-    coinCommissionBytes, err := st.contractCaller.Call(st.evm.Context.Coinbase, AnonIDContractAddress, []byte("coinCommission()"), st.gas)
+    coinCommissionBytes, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature3, st.gas)
     if err != nil {
         return fmt.Errorf("failed to fetch coinCommission: %v", err)
     }
     coinCommission := new(big.Int).SetBytes(coinCommissionBytes)
 
     // Calculate the commission amount
-    commissionAmount := new(big.Int).Mul(amountToMint, coinCommission)
+    commissionAmount := new(big.Int).Mul(amountToMintInWei, coinCommission)
     commissionAmount = commissionAmount.Div(commissionAmount, big.NewInt(100)) // Assuming coinCommission is in percentage
 
     // Deduct commission from amountToMint and add to the AnonID contract
-    amountToMint.Sub(amountToMint, commissionAmount)
-    st.state.AddBalance(AnonIDContractAddress, commissionAmount)
+    amountToMintInWei.Sub(amountToMintInWei, commissionAmount)
+
+	functionSignature4 := common.Hex2Bytes("931742d3") 
+    byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
+    if err != nil {
+        // Handle the error
+        fmt.Println("Error calling contract:", err)
+    }
+
+    // Assuming the address is in the first 20 bytes of the returned data
+    if len(byteAddress) >= 20 {
+        // Convert the bytes to an Ethereum address
+        commissionAddress := common.BytesToAddress(byteAddress[:20])
+
+        // Now you can use this address in AddBalance
+        st.state.AddBalance(commissionAddress, commissionAmount)
+    } else {
+        // Handle the case where the byte slice is too short
+        fmt.Println("Returned data is too short to be an address")
+    }
 
     // Mint the tokens to the user's address
-    st.state.AddBalance(userAddress, amountToMint)
+    st.state.AddBalance(userAddress, amountToMintInWei)
 
     // Note: You'll need to reflect these changes in the smart contract as well. 
     // The contract functions should be called with the correct parameters.
@@ -455,7 +498,6 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		//errMsg := fmt.Sprintf("Failed to check if address is whitelisted: %v. From: %v, Contract Address: %v, Data: %v, Gas: %v, isWhitelisted: %v",
 		//	err, st.msg.From().Hex(), AnonIDContractAddress.Hex(), common.Bytes2Hex(data), st.gas, isWhitelisted)
 		//return fmt.Errorf(errMsg)
-		st.state.AddBalance(st.msg.From(), big.NewInt(1))
 
 	}
 	
@@ -480,8 +522,11 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		st.state.AddBalance(st.msg.From(), big.NewInt(10))
 		if st.IsClaimTokensInvoked() {
 			// If so, handle the claim logic
+			st.state.AddBalance(st.msg.From(), big.NewInt(1))
 			err := st.ProcessClaimTokens()
 			if err != nil {
+
+				st.state.AddBalance(st.msg.From(), big.NewInt(5))
 				// Handle error, revert transaction or whatever behavior you want
 			}
 		}
