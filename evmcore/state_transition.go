@@ -342,7 +342,7 @@ func (st *StateTransition) ProcessClaimTokens() error {
 
 	lastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data, st.gas)
     if err != nil {
-        return fmt.Errorf("failed to fetch lastClaim: %v", err)
+        //return fmt.Errorf("failed to fetch lastClaim: %v", err)
     }
 	paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
@@ -354,7 +354,7 @@ func (st *StateTransition) ProcessClaimTokens() error {
 
     lastlastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
     if err != nil {
-        return fmt.Errorf("failed to fetch lastlastClaim: %v", err)
+        //return fmt.Errorf("failed to fetch lastlastClaim: %v", err)
     }
 
     lastClaimInt := new(big.Int).SetBytes(lastClaim)
@@ -370,7 +370,7 @@ func (st *StateTransition) ProcessClaimTokens() error {
     // Fetch the coinCommission from the AnonID contract
     coinCommissionBytes, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature3, st.gas)
     if err != nil {
-        return fmt.Errorf("failed to fetch coinCommission: %v", err)
+        //return fmt.Errorf("failed to fetch coinCommission: %v", err)
     }
     coinCommission := new(big.Int).SetBytes(coinCommissionBytes)
 
@@ -382,22 +382,63 @@ func (st *StateTransition) ProcessClaimTokens() error {
     amountToMintInWei.Sub(amountToMintInWei, commissionAmount)
 
 	functionSignature4 := common.Hex2Bytes("931742d3") 
-    byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
-    if err != nil {
-        // Handle the error
-        fmt.Println("Error calling contract:", err)
-    }
+	// this calls commissionAddress() of AnonIDContract
+    // byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
+    // if err != nil {
+    //     // Handle the error
+    //     return fmt.Errorf("Error calling contract: %v", err)
+    // }
+	byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
+	//if err == nil {
+		// Including the variables in the error message
+	//return fmt.Errorf("Error calling contract with TheRockAddress: %v, AnonIDContractAddress: %v, functionSignature: %x, gas: %v - Error: %v, byteAddress %v %v",
+	//					  TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas, err, byteAddress)
+	//}
+	
+	// // Open the file for writing
+	// file, fileErr := os.Create("/home/devbox4/Desktop/byteAddress.txt")
+	// if fileErr != nil {
+	// 	// handle file error
+	// 	//return
+	// }
+	// defer file.Close()
 
+	// // Write byteAddress in %s and %v format
+	// _, err = fmt.Fprintf(file, "String format: %s\n", string(byteAddress))
+	// if err != nil {
+	// 	// handle error
+	// }
+	// _, err = fmt.Fprintf(file, "Default format: %v\n", byteAddress)
+	// if err != nil {
+	// 	// handle error
+	// }
+
+	// // Write byteAddress in binary format (%b)
+	// _, err = fmt.Fprint(file, "Binary format: ")
+	// if err != nil {
+	// 	// handle error
+	// }
+	// for _, b := range byteAddress {
+	// 	_, err = fmt.Fprintf(file, "%08b ", b)
+	// 	if err != nil {
+	// 		// handle error
+	// 		break
+	// 	}
+	// }
+	// _, err = fmt.Fprint(file, "\n")
+	// if err != nil {
+	// 	// handle error
+	// }
     // Assuming the address is in the first 20 bytes of the returned data
     if len(byteAddress) >= 20 {
         // Convert the bytes to an Ethereum address
-        commissionAddress := common.BytesToAddress(byteAddress[:20])
+        commissionAddress := common.BytesToAddress(byteAddress[12:])
 
         // Now you can use this address in AddBalance
         st.state.AddBalance(commissionAddress, commissionAmount)
     } else {
         // Handle the case where the byte slice is too short
-        fmt.Println("Returned data is too short to be an address")
+        return fmt.Errorf("Returned data is too short to be an address")
     }
 
     // Mint the tokens to the user's address
