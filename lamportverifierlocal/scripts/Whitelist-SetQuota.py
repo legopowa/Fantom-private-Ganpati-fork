@@ -253,7 +253,7 @@ class LamportTest:
         _contract.setQuotaForAddress(
                             
             paddressToBroadcast,
-            '30',
+            '100',
             #current_keys.pub,
             #sig,
             #nextpkh,

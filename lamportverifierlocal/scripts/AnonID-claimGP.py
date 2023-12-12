@@ -41,7 +41,7 @@ CRC_END = b'</CRC>'
 
 
 
-gas_strategy = LinearScalingStrategy("120 gwei", "12000 gwei", 1.1)
+gas_strategy = LinearScalingStrategy("1200 gwei", "120000 gwei", 1.1)
 
 # if network.show_active() == "development":
 gas_price(gas_strategy)
@@ -253,7 +253,7 @@ class LamportTest:
             # current_keys.pub,
             # sig,
             # nextpkh,
-            {'from': brownie_account}
+            {'from': brownie_account, 'gas_limit': 500000}
 
         )
         #exit()

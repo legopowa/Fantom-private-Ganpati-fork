@@ -238,7 +238,7 @@ class LamportTest:
         #pairs = generate_address_value_pairs(10)
         #packed_pairs = solidity_pack_pairs(pairs)
         #_newCap = int(300000)
-        numToBroadcast = 300000
+        numToBroadcast = 850000
         pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 

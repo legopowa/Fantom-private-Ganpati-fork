@@ -571,6 +571,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		// 	//fmt.Println("Error writing to file:", writeErr)
 		// 	//return
 		// }
+		// file.Close()
 		
 		if err != nil {
 			//errMsg := fmt.Sprintf("Failed to check if the transaction is free: %v. Details: {TheRock: %s, From: %s, Gas: %d, Data: %s, isFree: %v}",
