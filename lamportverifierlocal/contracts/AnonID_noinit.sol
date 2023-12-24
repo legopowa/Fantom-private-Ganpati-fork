@@ -76,7 +76,10 @@ contract AnonIDContract {
         KeyType keyType;
         bytes32 pkh;
     }
-
+    struct LastPlayedInfo {
+        uint256 gameId;
+        uint256 timestamp;
+    }
     struct UserQuota {
         uint256 start; // Index of the oldest timestamp
         uint256 count; // Current count of timestamps
@@ -131,6 +134,22 @@ contract AnonIDContract {
         return _coinCommission;
     }
 
+    // Assuming there's a mapping to track the last mint time for each player in each game
+    // Mapping for each player's last played information
+    mapping(address => LastPlayedInfo) public lastPlayed;
+
+    // Check if the player is active in the specified game
+    function isPlayerActiveInGame(uint256 gameID, address player) public view returns (uint8) {
+        LastPlayedInfo memory lastPlayedInfo = lastPlayed[player];
+        bool isWithinTimeLimit = block.timestamp - lastPlayedInfo.timestamp < 8 minutes;
+
+        if (isWithinTimeLimit && lastPlayedInfo.gameId == gameID) {
+            return 2; // Player is active in this game and recently minted
+        } else if (isWithinTimeLimit && lastPlayedInfo.gameId != gameID) {
+            return 1; // Player is active but in a different game
+        }
+        return 0; // Player is not currently active
+    }
 
 
     function addToWhitelist(address _address, string memory anonID) external {
@@ -339,7 +358,17 @@ contract AnonIDContract {
         emit MinutesPlayedIncremented(user, _minutes);
 
     }
+    mapping(address => LastPlayedInfo) public lastPlayed;
 
+    function updateLastPlayed(address _address, uint256 _gameId) external {
+        require(isContractPermitted[msg.sender], "Not permitted to update last played");
+
+        lastPlayed[_address] = LastPlayedInfo({
+            gameId: _gameId,
+            timestamp: block.timestamp
+        });
+
+    }
     // Function to get the minutes played by a user
     function getMinutesPlayed(address user) external view returns (uint256) {
         return minutesPlayed[user];

@@ -1,5 +1,5 @@
 import lorem
-
+from pathlib import Path
 import sys
 from itertools import chain
 import random
@@ -230,6 +230,17 @@ class LamportTest:
         print('master_pkh_1', master_pkh_1)
         private_key = '163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7'
         brownie_account = accounts.add(private_key)
+        ##mnemonic using user acct
+                # Read mnemonic from file
+        mnemonic_path = Path('mnemonic.txt')
+        if not mnemonic_path.is_file():
+            raise Exception(f"Can't find {mnemonic_path}")
+
+        with open(mnemonic_path, "r") as file:
+            mnemonic = file.read().strip()
+
+        # Generate the account using the mnemonic
+        user_account = accounts.from_mnemonic(mnemonic)
         current_keys = self.k1.load(self, "master1", master_pkh_1)
         current_pkh = self.k1.pkh_from_public_key(current_keys.pub)
         print('current pkh', current_pkh)
@@ -253,7 +264,7 @@ class LamportTest:
             # current_keys.pub,
             # sig,
             # nextpkh,
-            {'from': brownie_account, 'gas_limit': 500000}
+            {'from': user_account, 'gas_limit': 500000}
 
         )
         #exit()

@@ -523,6 +523,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 func (st *StateTransition) refundGas(refundQuotient uint64)  {
 	// Apply refund counter, capped to a refund quotient
+	var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
 
 	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
@@ -534,7 +535,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 
 	// Call the isWhitelisted function on the contract
 	var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
-	isWhitelisted, err := st.contractCaller.Call(st.msg.From(), AnonIDContractAddress, data, st.gas)
+	isWhitelisted, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data, st.gas)
 	if err != nil {
 		//errMsg := fmt.Sprintf("Failed to check if address is whitelisted: %v. From: %v, Contract Address: %v, Data: %v, Gas: %v, isWhitelisted: %v",
 		//	err, st.msg.From().Hex(), AnonIDContractAddress.Hex(), common.Bytes2Hex(data), st.gas, isWhitelisted)
@@ -591,7 +592,6 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 
 		data2 := append(functionSignature2, paddedAddress2...)
 
-		var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
 
 		// Your existing call, but with TheRockAddress as the sender
 		isFree, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
