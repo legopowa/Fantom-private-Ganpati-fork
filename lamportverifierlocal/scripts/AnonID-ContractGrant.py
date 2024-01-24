@@ -241,7 +241,9 @@ class LamportTest:
         #numToBroadcast = int(1000000)
         #pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         #paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
-        paddressToBroadcast = '0xf8dB8568DE14A15a0E281a33E7455605ecF794A1'
+        #paddressToBroadcast = '0xf8dB8568DE14A15a0E281a33E7455605ecF794A1'
+        #paddressToBroadcast = '0xBa31acfb72a2Ad1682b4d45EE427CF3Cf69d6517'  
+        paddressToBroadcast = '0xC56922192f26f371dBd31DDD30329bAcEBd30643'
 
         #packed_message = binascii.hexlify(_newCap) + nextpkh[2:].encode()
         #packed_message = paddednumToBroadcast.hex().encode() + nextpkh[2:].encode()

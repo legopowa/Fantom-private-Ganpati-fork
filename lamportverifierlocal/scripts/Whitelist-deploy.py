@@ -41,8 +41,9 @@ def main():
     # Interact with the already deployed contract
     # contract_address = '0x6CA548f6DF5B540E72262E935b6Fe3e72cDd68C9'
     # deployed_contract = Contract.from_abi("DeployedContract", contract_address, minimal_abi)
-
-    contract2 = WhitelistTest.deploy({'from': brownie_account})
+    with open('contract_AnonID.txt', 'r') as file:
+        contract_address = file.read().strip()
+    contract2 = WhitelistTest.deploy(contract_address, {'from': brownie_account})
     print(f"WhitelistTest min deployed: {contract2.address}")
     #contract = AnonIDContract.deploy({'from': accounts[0]})
     #print(f"AnonID deployed: {contract.address}")
