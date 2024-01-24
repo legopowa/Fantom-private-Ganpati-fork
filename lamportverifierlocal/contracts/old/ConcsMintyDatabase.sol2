@@ -1,0 +1,158 @@
+pragma solidity ^0.8.0;
+
+// Parent contract AnonID
+contract AnonID {
+    struct LastPlayedInfo {
+        uint256 gameID;
+        uint256 timestamp;
+    }
+
+    mapping(address => uint256) public minutesPlayed;
+    mapping(address => LastPlayedInfo) public lastPlayed;
+    mapping(address => bool) isContractPermitted;
+
+    event MinutesPlayedIncremented(address indexed user, uint256 minutes);
+    event LastPlayedUpdated(address indexed user, uint256 gameId);
+
+    function incrementMinutesPlayed(address user, uint256 _minutes) external {
+        require(isContractPermitted[msg.sender], "Not permitted to modify minutes played");
+        minutesPlayed[user] += _minutes;
+        emit MinutesPlayedIncremented(user, _minutes);
+    }
+
+    function updateLastPlayed(address _address, uint256 _gameId) external {
+        require(isContractPermitted[msg.sender], "Not permitted to update last played");
+        lastPlayed[_address] = LastPlayedInfo({
+            gameID: _gameId,
+            timestamp: block.timestamp
+        });
+        emit LastPlayedUpdated(_address, _gameId);
+    }
+
+    // Additional functions and security checks as necessary...
+}
+
+// MintyDatabase contract inheriting from AnonID
+contract MintyDatabase is AnonID {
+    // ERC20 Token variables
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 public totalSupply;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    // Player Database variables
+    struct Player {
+        bool isRegistered;
+        bool isValidator;
+        string steamID;
+        address rewardAddress;
+    }
+
+    mapping(address => Player) public playerData;
+    address[] public playerAddresses;
+
+    // Shared variables
+    address public gameValContract; // Address of the game subcontractor
+    address public validatorContract; // Address of the validator contract
+    address public onrampContract; // Address of the onramp contract
+    address public forumContract; // Address of the forum contract
+
+    // Events
+    event GameValContractUpdated(address indexed newGameValContract);
+    event OnrampContractUpdated(address indexed newOnrampContract);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    // Constructor
+    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+        totalSupply = _totalSupply;
+        balanceOf[msg.sender] = _totalSupply;
+    }
+
+    // ERC20 Token functions
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        require(balanceOf[msg.sender] >= _value, "Insufficient balance");
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        emit Transfer(msg.sender, _to, _value);
+        return true;
+    }
+
+    // ... [Other ERC20 functions: approve, transferFrom]
+
+    // Modified mint function
+    function mint(address _to, uint256 _amount, uint256 _minutesPlayed) public {
+        require(msg.sender == gameValContract, "Only the game subcontractor can mint");
+        totalSupply += _amount;
+        balanceOf[_to] += _amount;
+        emit Transfer(address(0), _to, _amount); // Minting event
+
+        // Update minutes played and last played
+        incrementMinutesPlayed(_to, _minutesPlayed);
+        updateLastPlayed(_to, 1); // Assuming "TFC" is represented by the ID 1
+    }
+
+    // Player Database functions
+    function addOrUpdatePlayer(address _address, string memory _steamID, bool _isValidator, bool _isRegistered) public {
+        require(msg.sender == onrampContract, "Only the onramp contract can add/update players");
+        Player storage player = playerData[_address];
+        if (!player.isRegistered) {
+            playerAddresses.push(_address);
+        }
+        playerData[_address] = Player({
+            steamID: _steamID,
+            isValidator: _isValidator,
+            isRegistered: _isRegistered,
+            rewardAddress: _address
+        });
+    }
+
+    // ... [Other Player Database functions]
+
+    // Shared functions
+    function updateGameValContract(address _gameValContract) public {
+        gameValContract = _gameValContract;
+        emit GameValContractUpdated(_gameValContract);
+    }
+
+    function updateOnrampContract(address _onrampContract) public {
+        onrampContract = _onrampContract;
+        emit OnrampContractUpdated(_onrampContract);
+    }
+    // ... [Previous variables and functions]
+
+
+    // ... [Rest of the existing contract]
+
+    // Function to update the forum contract address
+    function updateForumContract(address _forumContract) public {
+        // Add appropriate security checks
+        forumContract = _forumContract;
+    }
+
+    // Function to change a player's moderator status
+    function toggleModeratorStatus(address _player, bool _status) external {
+        require(msg.sender == forumContract, "Only the forum contract can modify moderator status");
+        playerData[_player].isModerator = _status;
+    }
+
+    // Function to change a player's tournament moderator status
+    function toggleTourneyModStatus(address _player, bool _status) external {
+        require(msg.sender == forumContract, "Only the forum contract can modify tournament moderator status");
+        playerData[_player].isTourneyMod = _status;
+    }
+
+    // Function to set or update a player's forum key
+    function setForumKey(address _player, bytes32 _key) external {
+        require(msg.sender == forumContract, "Only the forum contract can set forum key");
+        playerData[_player].forumKey = _key;
+    }
+
+    // ... [Additional functions and security checks as necessary]
+}

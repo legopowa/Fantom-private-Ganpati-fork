@@ -33,6 +33,55 @@ abstract contract LamportBase {
         addKey(KeyType.ORACLE, oraclePKH);
         initialized = true;
     }
+    // Function to perform onlyLamportMaster checks
+    function performLamportMasterCheck(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        bytes memory prepacked
+    ) public returns (bool) {
+        require(initialized, "LamportBase: not initialized");
+
+        bytes32 pkh = keccak256(abi.encodePacked(currentpub));
+        if (keyData[pkh].keyType != KeyType.MASTER) {
+            return false;
+        }
+
+        uint256 hashedData = uint256(keccak256(abi.encodePacked(prepacked, nextPKH)));
+        bool verificationResult = verify_u256(hashedData, sig, currentpub);
+
+        if (!verificationResult) {
+            return false;
+        } else {
+            updateKey(pkh, nextPKH);
+            return true;
+        }
+    }
+
+    // Function to perform onlyLamportOracle checks
+    function performLamportOracleCheck(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        bytes memory prepacked
+    ) public returns (bool) {
+        require(initialized, "LamportBase: not initialized");
+
+        bytes32 pkh = keccak256(abi.encodePacked(currentpub));
+        if (keyData[pkh].keyType != KeyType.ORACLE) {
+            return false;
+        }
+
+        uint256 hashedData = uint256(keccak256(abi.encodePacked(prepacked, nextPKH)));
+        bool verificationResult = verify_u256(hashedData, sig, currentpub);
+
+        if (!verificationResult) {
+            return false;
+        } else {
+            updateKey(pkh, nextPKH);
+            return true;
+        }
+    }
 
     // Add a new key
     function addKey(KeyType keyType, bytes32 newPKH) private {

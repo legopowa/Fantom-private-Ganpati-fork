@@ -1,4 +1,4 @@
-from brownie import accounts, AnonIDContract#, firewallet
+from brownie import accounts, AnonIDContract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_account import Account
@@ -26,7 +26,7 @@ from offchain.Types import LamportKeyPair, Sig, PubPair
 
 
 
-
+gas_price_in_wei = 10000 * 10**9 
 gas_strategy = LinearScalingStrategy("1200 gwei", "12000 gwei", 1.1)
 
 # if network.show_active() == "development":

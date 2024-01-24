@@ -33,6 +33,7 @@ do
     esac
     (../build/demo_opera \
     --fakenet 0/3 \
+    --cache 7951 \
     --datadir=${DATADIR} \
     --port=${PORT} \
     --nat extip:127.0.0.1 \
@@ -42,7 +43,7 @@ do
     --allow-insecure-unlock --rpc --rpcapi="db,eth,net,web3,personal,txpool,miner" \
     $VALIDATOR_ID $VALIDATOR_PUBKEY \
     --validator.password "/home/devbox4/Desktop/fakepassword.txt" \
-    --genesis ./3val022.g --genesis.allowExperimental >> opera$i.log 2>&1)&
+    --genesis ./3val026.g --genesis.allowExperimental >> opera$i.log 2>&1)&
 
     echo -e "\tnode$i ok"
 done

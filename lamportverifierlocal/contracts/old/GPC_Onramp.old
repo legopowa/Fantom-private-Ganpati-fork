@@ -1,0 +1,23 @@
+pragma solidity ^0.8.0;
+
+interface IPlayerDatabaseSubcontract {
+    function addOrUpdatePlayer(address _address, string calldata _steamID, bool _isValidator, bool _isRegistered) external;
+}
+
+contract PlayerOnrampContract {
+    IPlayerDatabaseSubcontract public playerDatabase;
+
+    event PlayerOnboarded(address indexed playerAddress, string steamID, bool isValidator, bool isRegistered);
+
+    constructor(address _playerDatabaseAddress) {
+        playerDatabase = IPlayerDatabaseSubcontract(_playerDatabaseAddress);
+    }
+
+    function onboardPlayer(address _address, string calldata _steamID, bool _isValidator, bool _isRegistered) public {
+        // Additional logic and security checks as needed
+        playerDatabase.addOrUpdatePlayer(_address, _steamID, _isValidator, _isRegistered);
+        emit PlayerOnboarded(_address, _steamID, _isValidator, _isRegistered);
+    }
+
+    // Additional functions and logic as required for onramping...
+}

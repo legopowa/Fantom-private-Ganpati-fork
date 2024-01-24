@@ -35,6 +35,12 @@ import (
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)
+var AnonIDContractAddress = common.HexToAddress("0x7054f22291D2c60144643248CAD4f5D9ef4F6146")
+// 0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97
+
+var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD") 
+// this is so the coin claim function has a dummy whitelisted contract as sender
+
 
 /*
 The State Transitioning Model
@@ -323,8 +329,8 @@ func encodeUserAddress(userAddress common.Address) []byte {
 }
 func (st *StateTransition) ProcessClaimTokens() error {
 
-	var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
-    var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
+	//var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
+    //var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
     userAddress := st.msg.From()
 	//commission address should be result from commissionAddress() of above contract
     //encodedUserAddress := encodeUserAddress(userAddress)
@@ -523,7 +529,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 func (st *StateTransition) refundGas(refundQuotient uint64)  {
 	// Apply refund counter, capped to a refund quotient
-	var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
 
 	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
@@ -534,7 +539,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 	data := append(functionSignature, paddedAddress...)
 
 	// Call the isWhitelisted function on the contract
-	var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
+	//var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
 	isWhitelisted, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data, st.gas)
 	if err != nil {
 		//errMsg := fmt.Sprintf("Failed to check if address is whitelisted: %v. From: %v, Contract Address: %v, Data: %v, Gas: %v, isWhitelisted: %v",

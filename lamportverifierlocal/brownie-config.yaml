@@ -4,3 +4,6 @@ networks:
     host: http://127.0.0.1
     port: 4002
     chainid: 86098
+compiler:
+  solc:
+    version: 0.8.21

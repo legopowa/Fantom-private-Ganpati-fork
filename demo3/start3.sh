@@ -33,6 +33,7 @@ do
     esac
     (../build/demo_opera \
     --datadir=${DATADIR} \
+    --cache 7951 \
     --port=${PORT} \
     --nat extip:127.0.0.1 \
     --http --http.addr="127.0.0.1" --http.port=${RPCP} --http.corsdomain="*" --http.api="eth,debug,net,admin,web3,personal,txpool,ftm,dag" \
