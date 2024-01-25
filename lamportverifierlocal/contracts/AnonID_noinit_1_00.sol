@@ -3,93 +3,112 @@
 pragma solidity ^0.8.1;
 
 contract AnonIDContract {
-    
-    uint256 public freeGasCap; // Add this state variable for freeGasFee
-    uint256 public _coinCommission;
-    uint256 private lastUsedCommission;
-    bytes32 public lastUsedBytecodeHash;
-    bytes32 constant master1 = 0xb7b18ded9664d1a8e923a5942ec1ca5cd8c13c40eb1a5215d5800600f5a587be;
-    bytes32 constant master2 = 0x1ed304ab73e124b0b99406dfa1388a492a818837b4b41ce5693ad84dacfc3f25;
-    bytes32 constant oracle = 0xd62569e61a6423c880a429676be48756c931fe0519121684f5fb05cbd17877fa;
-    // uint256 public hourlyUserTxLimit;
-    bytes32 private lastUsedCommissionAddressHash;
 
-    // uint256 public hourlyValidatorTxLimit;
-    // uint256 public hourlyExchangeTxLimit;
-    //mapping(address => uint256[]) public userTxTimestamps;
-    mapping(address => uint256) public hourlyTxQuota;
-    address private _commissionAddress;
-    address private SFCContractAddress;
-    address private netinitContractAddress;
-    mapping(address => LastPlayedInfo) public lastPlayed;
-    bytes32 public lastUsedNextPKH;
+    // key management section
 
-    // Mapping of permitted contracts
-    mapping(address => bool) public isContractPermitted;
-    // user mappings
-    //mapping(bytes32 => bool) public whitelist;
-    mapping(address => bool) public whitelist;
-    bytes32 private lastUsedDeleteKeyHash;
+    Key[] public keys; // For iteration
+
+    enum KeyType { MASTER, ORACLE, DELETED } // Define different key types
+
+    struct Key {      // Store the keys and their corresponding public key hash
+
+        KeyType keyType;
+        bytes32 pkh;
+    }
+  
+    mapping(bytes32 => Key) public keyData; // For search
+  
     bytes32 private storedNextPKH;
+    bytes32 public lastUsedNextPKH;
+    bytes32 private lastUsedDeleteKeyHash;
+    bytes32 constant master1 = 0xb7b18ded9664d1a8e923a5942ec1ca5cd8c13c40eb1a5215d5800600f5a587be; // default keyfile has these
+    bytes32 constant master2 = 0x1ed304ab73e124b0b99406dfa1388a492a818837b4b41ce5693ad84dacfc3f25;
+    bytes32 constant oracle = 0xd62569e61a6423c880a429676be48756c931fe0519121684f5fb05cbd17877fa; 
+  
+    event KeyAdded(KeyType keyType, bytes32 newPKH);
+    event KeyModified(KeyType originalKeyType, bytes32 originalPKH, bytes32 modifiedPKH, KeyType newKeyType);
+    event PkhUpdated(KeyType keyType, bytes32 previousPKH, bytes32 newPKH);
+    event LogLastCalculatedHash(uint256 hash);
+
+    // free transactional quota section
+
+    struct UserQuota {
+        uint256 start; // Index of the oldest timestamp
+        uint256 count; // Current count of timestamps
+    }
+
+    mapping(address => UserQuota) private userQuotaInfo;
+    mapping(address => uint256[500]) private userTxTimestamps; // Example with max 500 transactions
+    mapping(address => uint256) public hourlyTxQuota;
+    mapping(address => LastPlayedInfo) public lastPlayed;
+
+    event TxRecorded(address indexed _user, uint256 timestamp);
+    event QuotaSet(address indexed _address, uint256 _quota);
+
+    // permissions
+
+    mapping(address => bool) public isContractPermitted;
+    mapping(address => bool) public whitelist;
+
+    event VerificationFailed(uint256 hashedData);
+    event Whitelisted(address indexed _address, bytes32 hashedID);
+    event RemovedFromWhitelist(address indexed _address);
+
+    bool public lastVerificationResult;
+
+    // profile things
+
     mapping(address => uint256) public minutesPlayed;
     mapping(address => uint256) public lastClaim;
     mapping(address => uint256) public lastLastClaim;
     mapping(address => bytes32) public addressToHashedID;
-    Key[] public keys; // For iteration
-    mapping(bytes32 => Key) public keyData; // For search
-    mapping(address => UserQuota) private userQuotaInfo;
-    mapping(address => uint256[500]) private userTxTimestamps; // Example with max 500 transactions
 
-
-    event LogLastCalculatedHash(uint256 hash);
-    event VerificationFailed(uint256 hashedData);
-    event PkhUpdated(KeyType keyType, bytes32 previousPKH, bytes32 newPKH);
-    event KeyAdded(KeyType keyType, bytes32 newPKH);
-    event KeyModified(KeyType originalKeyType, bytes32 originalPKH, bytes32 modifiedPKH, KeyType newKeyType);
-    event Whitelisted(address indexed _address, bytes32 hashedID);
-    event QuotaSet(address indexed _address, uint256 _quota);
-    event TxRecorded(address indexed _user, uint256 timestamp);
-    event RemovedFromWhitelist(address indexed _address);
     event MinutesPlayedIncremented(address indexed user, uint256 _minutes);
-    event CommissionSet(uint256 newCoinCommission);
+    event ClaimedGP(address indexed userAddress, uint256 lastClaimValue, uint256 minutesPlayed);
+
+    struct LastPlayedInfo {
+        uint256 gameId;
+        uint256 timestamp;
+    }
+
+
+    // globals
+
+    uint256 private lastUsedFreeGasCap;
+    address private lastUsedContractAddress;
+    address private lastUsedContractAddressForRevoke;
+
+
+    uint256 public freeGasCap; // Add this state variable for freeGasFee
+    bytes32 public lastUsedBytecodeHash;
+
     event ContractPermissionGranted(address contractAddress);
     event ContractPermissionRevoked(address contractAddress);
     event FreeGasCapSet(uint256 newFreeGasCap);
-    event ClaimedGP(address indexed userAddress, uint256 lastClaimValue, uint256 minutesPlayed);
+ 
+    // commission section
+
+    event CommissionSet(uint256 newCoinCommission);
     event CommissionAddressSet(address indexed newCommissionAddress);
 
+    uint256 public _coinCommission;
+    
+    address private _commissionAddress; // ideally make this a quantum-hard contract, commissions go here
+    uint256 private lastUsedCommission;
+    bytes32 private lastUsedCommissionAddressHash;
 
     constructor() {
+
         // Directly set the initial Lamport keys in the constructor
         addKey(KeyType.MASTER, master1);
         addKey(KeyType.MASTER, master2);
         addKey(KeyType.ORACLE, oracle);
         _commissionAddress = 0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9;
-        SFCContractAddress = 0xFC00FACE00000000000000000000000000000000;
-        netinitContractAddress = 0xD1005Eed00000000000000000000000000000000;
-        // hourlyUserTxLimit = 5;
-        // hourlyValidatorTxLimit = 120;
-        // hourlyExchangeTxLimit = 1200;
+
     }
 
-    bool public lastVerificationResult;
 
-    // Define different key types
-    enum KeyType { MASTER, ORACLE, DELETED }
 
-    // Store the keys and their corresponding pkh
-    struct Key {
-        KeyType keyType;
-        bytes32 pkh;
-    }
-    struct LastPlayedInfo {
-        uint256 gameId;
-        uint256 timestamp;
-    }
-    struct UserQuota {
-        uint256 start; // Index of the oldest timestamp
-        uint256 count; // Current count of timestamps
-    }
 
     //AnonID functions
     function setCoinCommissionStepOne(
@@ -178,9 +197,7 @@ contract AnonIDContract {
         emit Whitelisted(_address, hashedID);
 
     }
-    // function getHourlyTxQuota(address _address) external view returns (uint256) {
-    //     return hourlyTxQuota[_address];
-    // }
+
 
     function setHourlyTxQuota(address _address, uint256 _quota) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify hourly transaction quota");
@@ -249,99 +266,6 @@ contract AnonIDContract {
         emit TxRecorded(_user, block.timestamp);
         return true;
     }
-    // function isThisTxFree(address _user) external returns (bool) {
-    //     // Ensure only TheRock can call this function
-    //     require(msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD,
-    //             string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender))));
-
-    //     // Check if the user is whitelisted
-    //     if (!whitelist[_user]) {
-    //         return false;
-    //     }
-
-    //     // Return false if quota is zero
-    //     if (hourlyTxQuota[_user] == 0) {
-    //         return false;
-    //     }
-
-    //     // Get the array of timestamps for the user
-    //     uint256[] storage timestamps = userTxTimestamps[_user];
-
-    //     // Check if the user has made fewer transactions than the quota allows
-    //     if (timestamps.length < hourlyTxQuota[_user]) {
-    //         // User has not reached their quota yet, add the new timestamp
-    //         timestamps.push(block.timestamp);
-    //         emit TxRecorded(_user, block.timestamp);
-    //         return true;
-    //     }
-
-    //     // User has reached or exceeded their quota, check the timestamp for quota enforcement
-    //     if (block.timestamp - timestamps[0] <= 1 hours) {
-    //         // Quota exceeded, as the oldest transaction is within the last hour
-    //         return false;
-    //     }
-
-    //     // Remove the oldest timestamp and add the new one
-    //     removeOldestTimestamp(_user);
-    //     timestamps.push(block.timestamp);
-    //     emit TxRecorded(_user, block.timestamp);
-    //     return true;
-    // }
-
-    // function removeOldestTimestamp(address _user) internal {
-    //     uint256[] storage timestamps = userTxTimestamps[_user];
-    //     for (uint i = 0; i < timestamps.length - 1; i++) {
-    //         timestamps[i] = timestamps[i + 1];
-    //     }
-    //     timestamps.pop();
-    // }
-
-    // function removeOldestTimestamp(address _user) internal {
-    //     uint256[] storage timestamps = userTxTimestamps[_user];
-    //     for (uint i = 0; i < timestamps.length - 1; i++) {
-    //         timestamps[i] = timestamps[i + 1];
-    //     }
-    //     timestamps.pop();
-    // }
-
-// Add the toHexString function here if it's not already present in your contract
-
-
-    // function isThisTxFree(address _user) external returns (bool) {
-    //     // Ensure only the coinbase can call this function
-    //     // THIS IS ROCK
-    //     require(
-    //         msg.sender == 0x2685751d3C7A49EbF485e823079ac65e2A35A3DD, 
-    //         string(abi.encodePacked("Only TheRock can call this function. Caller: ", toHexString(msg.sender)))
-    //     );
-    //     // Check if the user is whitelisted
-    //     if (!whitelist[_user]) {
-    //         return false;
-    //     }
-
-    //     uint256[] storage timestamps = userTxTimestamps[_user];
-    //     emit TxRecorded(_user, block.timestamp);
-
-
-    //     // If the user has reached their hourly quota, check the oldest timestamp
-    //     if (timestamps.length >= hourlyTxQuota[_user]) {
-    //         if (block.timestamp - timestamps[0] <= 1 hours) {
-    //             // If the oldest transaction is within the last hour, the quota has been exceeded
-    //             return false;
-    //         } else {
-    //             // Otherwise, remove the oldest timestamp to make space for the new one
-    //             for (uint i = 0; i < timestamps.length - 1; i++) {
-    //                 timestamps[i] = timestamps[i + 1];
-    //             }
-    //             timestamps.pop();
-    //         }
-    //     }
-
-    //     // Add the new transaction timestamp
-    //     timestamps.push(block.timestamp);
-    //     return true;
-    // }
-    // Remove an address from the whitelist
 // Remove an address from the whitelist
     function removeFromWhitelist(address _address) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify whitelist");
@@ -395,36 +319,85 @@ contract AnonIDContract {
         
         require(lastClaimValue >= lastLastClaimValue, "Invalid claim values");
 
-        // uint256 amountToMint = lastClaimValue.sub(lastLastClaimValue); // Using SafeMath
-
-        // uint256 commissionAmount = amountToMint.mul(coinCommission).div(100); // Using SafeMath
-        // amountToMint = amountToMint.sub(commissionAmount); // Using SafeMath
-
-        // // Transfer the commission
-        // token.transfer(commissionAddress, commissionAmount);
-
-        // // Transfer the tokens to the user
-        // token.transfer(userAddress, amountToMint);
-
-        // Update lastClaim and lastLastClaim in the AnonID contract
         lastLastClaim[userAddress] = lastClaimValue;
         lastClaim[userAddress] = minutesPlayed[userAddress];  // Update with the current minutes played
         emit ClaimedGP(userAddress, lastClaimValue, minutesPlayed[userAddress]);
 
     }
-    function grantActivityContractPermission(address contractAddress, bytes32[2][256] calldata currentpub, bytes[256] calldata sig, bytes32 nextPKH) public onlyLamportMaster(currentpub, sig, nextPKH, abi.encodePacked(contractAddress)) {
-        isContractPermitted[contractAddress] = true;
-        emit ContractPermissionGranted(contractAddress);
-
+    // Step One: Store the contract address temporarily
+    function grantActivityContractPermissionStepOne(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        address contractAddress
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(contractAddress)
+        )
+    {
+        lastUsedContractAddress = contractAddress;
     }
 
-    // Function to revoke permission from a contract
-    function revokeActivityContractPermission(address contractAddress, bytes32[2][256] calldata currentpub, bytes[256] calldata sig, bytes32 nextPKH) public onlyLamportMaster(currentpub, sig, nextPKH, abi.encodePacked(contractAddress)) {
-        isContractPermitted[contractAddress] = false;
+    // Step Two: Apply the permission to the stored contract address
+    function grantActivityContractPermissionStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(lastUsedContractAddress)
+        )
+    {
+        isContractPermitted[lastUsedContractAddress] = true;
+        emit ContractPermissionGranted(lastUsedContractAddress);
     }
+
+    // Step One: Store the contract address temporarily
+    function revokeActivityContractPermissionStepOne(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        address contractAddress
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(contractAddress)
+        )
+    {
+        lastUsedContractAddressForRevoke = contractAddress;
+    }
+
+    // Step Two: Revoke the permission for the stored contract address
+    function revokeActivityContractPermissionStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(lastUsedContractAddressForRevoke)
+        )
+    {
+        isContractPermitted[lastUsedContractAddressForRevoke] = false;
+        emit ContractPermissionRevoked(lastUsedContractAddressForRevoke);
+    }
+
 
  
-// Temporary storage for the new commission address during the update process
 
     // Step 1: Temporarily store the hash of the new commission address
     function setCommissionAddressStepOne(
@@ -468,72 +441,6 @@ contract AnonIDContract {
         emit CommissionAddressSet(newCommissionAddress);
     }
 
-    function updateMinStakeStepOne(
-        bytes32[2][256] calldata currentpub,
-        bytes[256] calldata sig,
-        bytes32 nextPKH,
-        bytes memory newMinStake
-    )
-        public
-        onlyLamportMaster(
-            currentpub,
-            sig,
-            nextPKH,
-            abi.encodePacked(newMinStake)
-        )
-    {
-        // Save the used master NextPKH in a global variable
-        lastUsedNextPKH = nextPKH;
-    }
-
-    function updateMinStakeStepTwo(
-        bytes32[2][256] calldata currentpub,
-        bytes[256] calldata sig,
-        bytes32 nextPKH,
-        bytes32 newMinStake
-    )
-        public payable
-        onlyLamportMaster(
-            currentpub,
-            sig,
-            nextPKH,
-            abi.encodePacked(newMinStake)
-        )
-    {
-        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
-        bool pkhMatched = (lastUsedNextPKH != currentPKH);
-        lastUsedNextPKH = bytes32(0);
-
-        // If checks pass, call the target function
-        require(pkhMatched, "PKH does not match last used PKH");
-
-        // This is the signature of the function "updateMinSelfStake(uint256)"
-        bytes4 methodId = bytes4(keccak256("updateMinSelfStake(uint256)"));
-
-        // Encoding the method ID and parameters
-        bytes memory data = abi.encodeWithSelector(methodId, uint256(newMinStake));
-
-        // Perform the low-level call with the encoded data
-        (bool success, ) = SFCContractAddress.call{value: msg.value}(data);
-
-        // It's a good idea to handle the possibility that the call failed
-        require(success, "Call to updateMinSelfStake failed");
-    }
-
-    function callMinStake() public returns (uint256 minStakeValue) {
-        // This is the signature of the function "minStake()"
-        bytes4 methodId = bytes4(keccak256("minStake()"));
-
-        // Perform the low-level call with the encoded method ID
-        (bool success, bytes memory returnData) = netinitContractAddress.staticcall(abi.encodeWithSelector(methodId));
-
-        require(success, "Call to minStake failed");
-
-        // Decode the returned data
-        (minStakeValue) = abi.decode(returnData, (uint256));
-
-        return minStakeValue;
-    }
     function createContractStepOne(
         bytes32[2][256] calldata currentpub,
         bytes[256] calldata sig,
@@ -576,11 +483,42 @@ contract AnonIDContract {
         require(newContract != address(0), "Contract creation failed");
         return newContract;
     }
-    function setFreeGasCap(uint256 _newCap, bytes32[2][256] calldata currentpub, bytes[256] calldata sig, bytes32 nextPKH) public onlyLamportMaster(currentpub, sig, nextPKH, abi.encodePacked(_newCap)) {
-        freeGasCap = _newCap;
-        emit FreeGasCapSet(_newCap);
-
+    // Step One: Store the new value temporarily
+    function setFreeGasCapStepOne(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        uint256 _newCap
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(_newCap)
+        )
+    {
+        lastUsedFreeGasCap = _newCap;
     }
+
+    // Step Two: Apply the new value
+    function setFreeGasCapStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(lastUsedFreeGasCap)
+        )
+    {
+        freeGasCap = lastUsedFreeGasCap;
+        emit FreeGasCapSet(lastUsedFreeGasCap);
+    }
+
 
     // Lamport key functions
     // Add a new key
