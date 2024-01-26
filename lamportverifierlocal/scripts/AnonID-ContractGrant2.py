@@ -7,7 +7,7 @@ import hashlib
 import base64
 from web3 import Web3
 from web3.exceptions import InvalidAddress
-from brownie import network, web3, accounts, Wei, WhitelistTest, AnonIDContract, Contract
+from brownie import network, web3, accounts, Wei, AnonIDContract, Contract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_utils import encode_hex #, encode_single
@@ -22,7 +22,7 @@ from time import sleep
 import re
 from typing import List
 import struct
-#from offchain.local_functions import get_pkh_list
+from offchain.local_functions import get_pkh_list
 from offchain.KeyTracker_ import KeyTracker
 from offchain.soliditypack import solidity_pack_value_bytes, solidity_pack_value, pack_keys, encode_packed_2d_list, solidity_pack_bytes, encode_packed, solidity_pack_pairs, solidity_pack, solidity_pack_bytes, solidity_pack_array
 from offchain.Types import LamportKeyPair, Sig, PubPair
@@ -46,7 +46,7 @@ gas_strategy = LinearScalingStrategy("120 gwei", "1200 gwei", 1.1)
 # if network.show_active() == "development":
 gas_price(gas_strategy)
 
-ITERATIONS = 3
+# ITERATIONS = 3
 
 # def compute_crc(self, data: str) -> int:
 #     return crc32(data.encode())
@@ -55,6 +55,7 @@ offchain.data_temp.received_data = b''
 
 def encode_packed(*args):
     return b"".join([struct.pack(f"<{len(arg)}s", arg) for arg in args])
+
 
 def custom_encode_packed(address, integer):
     # Convert the address to bytes and pad with zeroes
@@ -74,17 +75,7 @@ def main():
         
         # Convert all account objects to strings before passing them
         lamport_test.can_test_key_functions([str(acc) for acc in accounts])
-        lamport_test.can_test_message_functions([str(acc) for acc in accounts])
-        lamport_test.can_test_del_functions([str(acc) for acc in accounts])       
 
-        # lamport_test.load_keys()
-        # lamport_test.load_two_masters()
-
-        # lamport_test.can_broadcast_message_via_broadcast2([str(acc) for acc in accounts])
-        # lamport_test.can_broadcast_message_via_broadcast_with_number([str(acc) for acc in accounts])
-        # lamport_test.can_broadcast_message_via_broadcast_with_number_and_address([str(acc) for acc in accounts])
-        
-#port = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
 
 oracle_pkh = []
 master_pkh_1 = []
@@ -100,31 +91,31 @@ class LamportTest:
         self.k3 = KeyTracker("oracle1")
         self.k4 = KeyTracker("master3")
         print("Initializing LamportTest...")
-        with open('whitelist_contract.txt', 'r') as file:
+        with open('contract_AnonID.txt', 'r') as file:
             contract_address = file.read().strip()
         #print(contract_address)
-        self.contract = WhitelistTest.at(contract_address)
+        self.contract = AnonIDContract.at(contract_address)
         #lamport_base = LamportBase.at(contract_address) # <<< not working!
         accounts.default = str(accounts[0]) 
         # link it up
-        #pkhs = self.get_pkh_list(self.contract, 0) lamport
-        #opkhs = self.get_pkh_list(self.contract, 1)
+        pkhs = self.get_pkh_list(self.contract, 0)
+        opkhs = self.get_pkh_list(self.contract, 1)
         # priv level set here with integer ^
-        #print("contract pkh", pkhs)
+        print("contract pkh", pkhs)
 
-        #self.load_two_masters(pkhs, "master")
-        #self.load_keys(opkhs, "oracle")
+        self.load_two_masters(pkhs, "master")
+        self.load_keys(opkhs, "oracle")
         print('init done')
 
-    #def get_pkh_list(self, contract, privilege_level):
-        #contract_pkh = str(contract.getPKHsByPrivilege(privilege_level)) lamport
+    def get_pkh_list(self, contract, privilege_level):
+        contract_pkh = str(contract.getPKHsByPrivilege(privilege_level))
         # gonna need some kind of wait / delay here for primetime
-        #print(contract_pkh)
-        #contract_pkh_list = re.findall(r'0x[a-fA-F0-9]+', contract_pkh)
-        #pkh_list = [pkh for pkh in contract_pkh_list]  # Removing '0x' prefix
-        #contract_pkh_string = json.dumps(contract_pkh)
-        #contract_pkh_list = json.dumps(contract_pkh_string)
-        #return pkh_list
+        print(contract_pkh)
+        contract_pkh_list = re.findall(r'0x[a-fA-F0-9]+', contract_pkh)
+        pkh_list = [pkh for pkh in contract_pkh_list]  # Removing '0x' prefix
+        contract_pkh_string = json.dumps(contract_pkh)
+        contract_pkh_list = json.dumps(contract_pkh_string)
+        return pkh_list
 
     
     def load_two_masters(self, pkhs, filename):
@@ -183,18 +174,18 @@ class LamportTest:
         global master_pkh_2
         #global master_pkh_3
         print("Running 'can_test_key_functions'...")
-        with open('whitelist_contract.txt', 'r') as file:
+        with open('contract_AnonID.txt', 'r') as file:
             contract_address = file.read()
             contract_address = contract_address.strip().replace('\n', '')  # Remove whitespace and newlines
 
-        _contract = WhitelistTest.at(contract_address)
+        _contract = AnonIDContract.at(contract_address)
         print("Contract referenced.")
         print('master_pkh_1', master_pkh_1)
         private_key = '163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7'
         brownie_account = accounts.add(private_key)
-        #current_keys = self.k1.load(self, "master1", master_pkh_1) lamport
-        #current_pkh = self.k1.pkh_from_public_key(current_keys.pub)
-        #print('current pkh', current_pkh)
+        current_keys = self.k1.load(self, "master1", master_pkh_1)
+        current_pkh = self.k1.pkh_from_public_key(current_keys.pub)
+        print('current pkh', current_pkh)
         next_keys = self.k1.get_next_key_pair()
         nextpkh = self.k1.pkh_from_public_key(next_keys.pub)
         #pairs = generate_address_value_pairs(10)
@@ -203,73 +194,45 @@ class LamportTest:
         #numToBroadcast = int(1000000)
         #pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         #paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
-        #paddressToBroadcast = '0x239fa7623354ec26520de878b52f13fe84b06971'
+        paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9' # activity contract needing approval
+
+        packed_message = str.lower(paddressToBroadcast)[2:].encode() + nextpkh[2:].encode()
+
+        callhash = hash_b(str(packed_message.decode()))
+        sig = sign_hash(callhash, current_keys.pri) 
+        private_key = '163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7'
+        brownie_account = accounts.add(private_key)
+        
+        _contract.grantActivityContractPermissionStepOne(
+            current_keys.pub,
+            sig,
+            nextpkh,
+            paddressToBroadcast,
+            {'from': brownie_account}    
+        )
+        self.k1.save(trim = False)
+        #self.k4.save(trim = False)
+        master_pkh_1 = nextpkh
+
+        current_keys = self.k2.load(self, "master2", master_pkh_2)
+        next_keys = self.k2.get_next_key_pair()
+        nextpkh = self.k2.pkh_from_public_key(next_keys.pub)
+
         paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9'
 
-        #packed_message = binascii.hexlify(_newCap) + nextpkh[2:].encode()
-        #packed_message = paddednumToBroadcast.hex().encode() + nextpkh[2:].encode()
         packed_message = str.lower(paddressToBroadcast)[2:].encode() + nextpkh[2:].encode()
-        
+
         callhash = hash_b(str(packed_message.decode()))
-        #sig = sign_hash(callhash, current_keys.pri) 
-        # _contract.addAddressToWhitelist(
-                            
-        #     paddressToBroadcast,
-        #     'blank',
-        #     #current_keys.pub,
-        #     #sig,
-        #     #nextpkh,
-        #     {'from': brownie_account}
-        # )
-        OperationResult_filter = _contract.events.OperationResult.createFilter(fromBlock='latest')
-
-        for event in OperationResult_filter.get_all_entries():
-            data = event['args']['success']
-            print(f"Operation Result: {data}")
+        sig = sign_hash(callhash, current_keys.pri) 
 
 
-    # # Addresses of the deployed contracts
-    #     anonid_contract_address = '0xA527F50706BB1FCaEd6F864afB2e3FCe4943AF68'
-    #     whitelist_test_contract_address = '0x09c7F5BB03497990AAE0a40dF2A6c87a15aaD430'  # Replace with actual address
-        # Read the AnonID contract address from contract_AnonID.txt
-        with open('contract_AnonID.txt', 'r') as file:
-            anonid_contract_address = file.read().strip()
-        print(f"AnonID Contract Address: {anonid_contract_address}")
-
-        # Read the WhitelistTest contract address from whitelist_contract.txt
-        with open('whitelist_contract.txt', 'r') as file:
-            whitelist_test_contract_address = file.read().strip()
-        print(f"WhitelistTest Contract Address: {whitelist_test_contract_address}")
-
-
-        # Access the deployed contracts
-        anonid_contract = AnonIDContract.at(anonid_contract_address)
-        whitelist_test_contract = WhitelistTest.at(whitelist_test_contract_address)
-
-        # Address to be whitelisted
-        #paddressToBroadcast = 'Some_Ethereum_Address'  # Replace with actual address
-
-        # Perform a transaction vvvvv 
-        tx = whitelist_test_contract.addMinutesPlayed(paddressToBroadcast, 10, {'from': brownie_account})
-        # minutes added here                                               ^^^
-
-        # Capture events
-        whitelist_events = tx.events['MinutesPlayedIncremented']
-        #failed_events = tx.events['WhitelistAdditionFailed']
-        #error_events = tx.events['ErrorCaught']
-
-        # Process success events
-        for event in whitelist_events:
-            print(f"Address {event['user']} recieved {event['_minutes']} played minutes")
-
-        # Process failure events
-        #for event in failed_events:
-        #    print(f"Failed to whitelist {event['_address']}: {event['reason']}")
-
-        # Process error events
-        #for event in error_events:
-        #    print(f"Error in action {event['action']}: {event['error']}")
-
-        #exit()
-        #self.k1.save(trim = False)
+        
+        _contract.grantActivityContractPermissionStepTwo(
+            current_keys.pub,
+            sig,
+            nextpkh,
+            paddressToBroadcast,
+            {'from': brownie_account}    
+        )
+        self.k2.save(trim = False)
         exit()

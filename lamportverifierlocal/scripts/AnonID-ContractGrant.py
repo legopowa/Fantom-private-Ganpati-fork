@@ -56,43 +56,6 @@ offchain.data_temp.received_data = b''
 def encode_packed(*args):
     return b"".join([struct.pack(f"<{len(arg)}s", arg) for arg in args])
 
-# def solidity_pack_pairs(pairs):
-#     packed_pairs = []
-#     for pair in pairs:
-#         address = pair[0]
-#         value = pair[1]
-#         packed_pairs.append(solidity_pack_bytes([address, value]))
-#     return b''.join(packed_pairs)
-
-# def solidity_pack_bytes(values):
-#     packed_values = []
-
-#     for value in values:
-#         if isinstance(value, int):
-#             # solidity uses big endian
-#             packed_value = value.to_bytes((value.bit_length() + 7) // 8, 'big').rjust(32, b'\0')
-#         elif isinstance(value, str) and re.match(r"^0x[a-fA-F0-9]{40}$", value):
-#             packed_value = bytes.fromhex(value[2:]).rjust(32, b'\0')
-#         elif isinstance(value, str):
-#             packed_value = value.encode('utf-8')
-#         else:
-#             raise ValueError("Unsupported type")
-            
-#         packed_values.append(packed_value)
-
-    return b''.join(packed_values)
-# def generate_address_value_pairs(n_pairs):
-#     pairs = [[None, None]] * 10
-#     for i in range(n_pairs):
-#         address = '0x' + binascii.hexlify(os.urandom(20)).decode()  # An Ethereum address is 20 bytes
-#         value = random.randint(1, 1000)  # You can adjust this as per your needs
-#         pairs[i][0] = address
-#         pairs[i][1] = value
-#     return pairs
-# # def generate_address_value_pairs(n):
-
-# #         addr = generate_address()  # Replace with your own logic to generate an address
-# #         value = generate_value()  # Replace with your own logic to generate a value
  
 def custom_encode_packed(address, integer):
     # Convert the address to bytes and pad with zeroes
