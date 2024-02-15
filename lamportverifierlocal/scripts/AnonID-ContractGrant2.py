@@ -194,8 +194,11 @@ class LamportTest:
         #numToBroadcast = int(1000000)
         #pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         #paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
-        paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9' # activity contract needing approval
-
+        #paddressToBroadcast = '0x99a840C3BEEe41c3F5B682386f67277CfE3E3e29' # activity contract needing approval
+        with open('whitelist_contract.txt', 'r') as file:
+            contract_address2 = file.read()
+            contract_address2 = contract_address2.strip().replace('\n', '') 
+        paddressToBroadcast = contract_address2
         packed_message = str.lower(paddressToBroadcast)[2:].encode() + nextpkh[2:].encode()
 
         callhash = hash_b(str(packed_message.decode()))
@@ -218,7 +221,7 @@ class LamportTest:
         next_keys = self.k2.get_next_key_pair()
         nextpkh = self.k2.pkh_from_public_key(next_keys.pub)
 
-        paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9'
+        #paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9'
 
         packed_message = str.lower(paddressToBroadcast)[2:].encode() + nextpkh[2:].encode()
 
@@ -231,7 +234,7 @@ class LamportTest:
             current_keys.pub,
             sig,
             nextpkh,
-            paddressToBroadcast,
+            #paddressToBroadcast,
             {'from': brownie_account}    
         )
         self.k2.save(trim = False)

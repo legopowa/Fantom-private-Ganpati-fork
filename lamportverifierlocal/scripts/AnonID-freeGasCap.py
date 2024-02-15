@@ -237,7 +237,7 @@ class LamportTest:
         #pairs = generate_address_value_pairs(10)
         #packed_pairs = solidity_pack_pairs(pairs)
         #_newCap = int(300000)
-        numToBroadcast = 850000
+        numToBroadcast = 890000
         pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 
@@ -246,15 +246,43 @@ class LamportTest:
         packed_message = paddednumToBroadcast.hex().encode() + nextpkh[2:].encode()
         callhash = hash_b(str(packed_message.decode()))
         sig = sign_hash(callhash, current_keys.pri) 
-        _contract.setFreeGasCap(
+        _contract.setFreeGasCapStepOne(
                             
-            numToBroadcast,
             current_keys.pub,
             sig,
             nextpkh,
-            {'from': brownie_account}
+            numToBroadcast,
+            {'from': brownie_account, 'gas_limit': 850000}
 
         )
         #exit()
         self.k1.save(trim = False)
+        master_pkh_1 = nextpkh
+
+        current_keys = self.k2.load(self, "master2", master_pkh_2)
+        next_keys = self.k2.get_next_key_pair()
+        nextpkh = self.k2.pkh_from_public_key(next_keys.pub)
+
+        #paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9'
+        numToBroadcast = 890000
+        pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
+        paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
+
+
+        packed_message = paddednumToBroadcast.hex().encode() + nextpkh[2:].encode()
+        #packed_message = nextpkh[2:].encode()
+
+        callhash = hash_b(str(packed_message.decode()))
+        sig = sign_hash(callhash, current_keys.pri) 
+        _contract.setFreeGasCapStepTwo(
+                            
+            current_keys.pub,
+            sig,
+            nextpkh,
+            {'from': brownie_account, 'gas_limit': 850000}
+
+        )
+
+        self.k2.save(trim = False)
+
         exit()

@@ -45,7 +45,7 @@ def generate_random_names(num_names, name_length):
     return names
 
 # Generate 800 random names, each 10 letters long
-random_names = generate_random_names(400, 2)
+random_names = generate_random_names(150, 10)
 print(random_names[:10])  # Display the first 10 names for example
 
 SOF = b'\x01'  # Start Of File marker
@@ -55,7 +55,7 @@ CRC_END = b'</CRC>'
 
 
 
-gas_strategy = LinearScalingStrategy("120 gwei", "1200 gwei", 1.1)
+gas_strategy = LinearScalingStrategy("120 gwei", "12000 gwei", 1.1)
 
 # if network.show_active() == "development":
 gas_price(gas_strategy)
@@ -264,7 +264,7 @@ class LamportTest:
         #paddressToBroadcast = 'Some_Ethereum_Address'  # Replace with actual address
 
         # Perform a transaction vvvvv 
-        tx = NameStorage_contract.addNames(random_names, {'from': brownie_account})# 'gas_limit': 5999999})
+        tx = NameStorage_contract.addNames(random_names, {'from': brownie_account, 'gas_limit': 3999999})
         # minutes added here                                               ^^^
 
         # Capture events

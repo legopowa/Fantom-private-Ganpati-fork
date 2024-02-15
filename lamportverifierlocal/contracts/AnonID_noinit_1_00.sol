@@ -67,7 +67,7 @@ contract AnonIDContract {
     event ClaimedGP(address indexed userAddress, uint256 lastClaimValue, uint256 minutesPlayed);
 
     struct LastPlayedInfo {
-        uint256 gameId;
+        string gameId;
         uint256 timestamp;
     }
 
@@ -163,14 +163,14 @@ contract AnonIDContract {
     // Assuming there's a mapping to track the last mint time for each player in each game
     // Mapping for each player's last played information
 
-    // Check if the player is active in the specified game
-    function isPlayerActiveInGame(uint256 gameID, address player) public view returns (uint8) {
+    function isPlayerActiveInGame(string memory gameID, address player) public view returns (uint8) {
         LastPlayedInfo memory lastPlayedInfo = lastPlayed[player];
         bool isWithinTimeLimit = block.timestamp - lastPlayedInfo.timestamp < 8 minutes;
 
-        if (isWithinTimeLimit && lastPlayedInfo.gameId == gameID) {
+        // Compare keccak256 hash of strings
+        if (isWithinTimeLimit && keccak256(abi.encodePacked(lastPlayedInfo.gameId)) == keccak256(abi.encodePacked(gameID))) {
             return 2; // Player is active in this game and recently minted
-        } else if (isWithinTimeLimit && lastPlayedInfo.gameId != gameID) {
+        } else if (isWithinTimeLimit && keccak256(abi.encodePacked(lastPlayedInfo.gameId)) != keccak256(abi.encodePacked(gameID))) {
             return 1; // Player is active but in a different game
         }
         return 0; // Player is not currently active
@@ -266,6 +266,40 @@ contract AnonIDContract {
         emit TxRecorded(_user, block.timestamp);
         return true;
     }
+
+    function getRemainingTxQuota(address _user) public view returns (uint256) {
+        // Check if the user is whitelisted
+        if (!whitelist[_user]) {
+            return 0;  // Not whitelisted, so no quota
+        }
+
+        // Get user's quota and transaction timestamps
+        uint256 quota = hourlyTxQuota[_user];
+        UserQuota storage quotaInfo = userQuotaInfo[_user];
+        uint256[500] storage timestamps = userTxTimestamps[_user];
+
+        // If quota buffer is not full, return the remaining quota
+        if (quotaInfo.count < quota) {
+            return quota - quotaInfo.count;
+        }
+
+        // If buffer is full, check the timestamp of the oldest transaction
+        uint256 oldestTimestampIndex = quotaInfo.start;
+        if (block.timestamp - timestamps[oldestTimestampIndex] > 1 hours) {
+            // The oldest transaction is older than an hour, so full quota is available
+            return quota;
+        }
+
+        // Calculate remaining quota based on the timestamp of the next oldest transaction
+        uint256 nextOldestIndex = (quotaInfo.start + 1) % quota;
+        if (block.timestamp - timestamps[nextOldestIndex] > 1 hours) {
+            return quota - 1; // One transaction will be available when the oldest timestamp expires
+        }
+
+        // If none of the above conditions are met, no transactions are available this hour
+        return 0;
+    }
+
 // Remove an address from the whitelist
     function removeFromWhitelist(address _address) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify whitelist");
@@ -289,7 +323,7 @@ contract AnonIDContract {
 
     }
 
-    function updateLastPlayed(address _address, uint256 _gameId) external {
+    function updateLastPlayed(address _address, string memory _gameId) external {
         require(isContractPermitted[msg.sender], "Not permitted to update last played");
 
         lastPlayed[_address] = LastPlayedInfo({
