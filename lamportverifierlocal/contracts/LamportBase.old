@@ -18,10 +18,7 @@ abstract contract LamportBase {
 
     Key[] public keys; // For iteration
     mapping(bytes32 => Key) public keyData; // For search
-    bytes32 constant master1 = 0xb7b18ded9664d1a8e923a5942ec1ca5cd8c13c40eb1a5215d5800600f5a587be; // default keyfile has these
-    bytes32 constant master2 = 0x1ed304ab73e124b0b99406dfa1388a492a818837b4b41ce5693ad84dacfc3f25;
-    bytes32 constant oracle = 0xd62569e61a6423c880a429676be48756c931fe0519121684f5fb05cbd17877fa; 
-  
+
     event LogLastCalculatedHash(uint256 hash);
     event VerificationFailed(uint256 hashedData);
     event PkhUpdated(KeyType keyType, bytes32 previousPKH, bytes32 newPKH);

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.1;
 
-abstract contract LamportBase {
+contract LamportBase2 {
 
     bool initialized = false;
     bool public lastVerificationResult;
@@ -29,11 +29,16 @@ abstract contract LamportBase {
     event KeyModified(KeyType originalKeyType, bytes32 originalPKH, bytes32 modifiedPKH, KeyType newKeyType);
 
     // Initial setup of the Lamport system, providing the first MASTER keys and an ORACLE key
-    function init(bytes32 masterPKH1, bytes32 masterPKH2, bytes32 oraclePKH) public {
-        require(!initialized, "LamportBase: Already initialized");
-        addKey(KeyType.MASTER, masterPKH1);
-        addKey(KeyType.MASTER, masterPKH2);
-        addKey(KeyType.ORACLE, oraclePKH);
+    // function init(bytes32 masterPKH1, bytes32 masterPKH2, bytes32 oraclePKH) public {
+    //     require(!initialized, "LamportBase: Already initialized");
+
+    //     ;
+    // }
+    constructor () {
+    
+        addKey(KeyType.MASTER, master1);
+        addKey(KeyType.MASTER, master2);
+        addKey(KeyType.ORACLE, oracle);
         initialized = true;
     }
     // Function to perform onlyLamportMaster checks
