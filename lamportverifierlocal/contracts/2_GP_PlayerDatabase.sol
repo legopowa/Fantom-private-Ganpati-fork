@@ -47,6 +47,8 @@ contract PlayerDatabase  {
     address public forumContract; // Address of the forum contract
 
     // Events
+    event ForumContractUpdated(address indexed newForumContract);
+    event AnonIDContractUpdated(address indexed newAnonIDContract);
     event GameValContractUpdated(address indexed newGameValContract);
     event OnrampContractUpdated(address indexed newOnrampContract);
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -66,11 +68,6 @@ contract PlayerDatabase  {
     }
     function isModerator(address _address) public view returns (bool) {
         return playerData[_address].isModerator;
-    }
-    // Function to set the AnonID contract address
-    function setAnonIDContractAddress(address _anonIDAddress) public {
-        // Add appropriate security checks
-        anonIDContract = IAnonID(_anonIDAddress);
     }
 
     function isRegistered(address _address) public view returns (bool) {
@@ -197,27 +194,29 @@ contract PlayerDatabase  {
         return playerNames;
     }
     // ... [Other Player Database functions]
-
+    // Function to set the AnonID contract address
+    function updateAnonIDContractAddress(address _anonIDContract) public {
+        // Add appropriate security checks
+        anonIDContract = IAnonID(_anonIDContract);
+        emit AnonIDContractUpdated(_anonIDContract);
+    }
     // Shared functions
-    function updateGameValContract(address _gameValContract) public {
+    function updateGameValContractAddress(address _gameValContract) public {
         gameValContract = _gameValContract;
         emit GameValContractUpdated(_gameValContract);
     }
 
-    function updateOnrampContract(address _onrampContract) public {
+    function updateOnrampContractAddress(address _onrampContract) public {
         onrampContract = _onrampContract;
         emit OnrampContractUpdated(_onrampContract);
     }
     // ... [Previous variables and functions]
-
-
+    function updateForumContractAddress(address _forumContract) public {
+        forumContract = _forumContract;
+        emit ForumContractUpdated(_forumContract);
+    }
     // ... [Rest of the existing contract]
 
-    // Function to update the forum contract address
-    function updateForumContract(address _forumContract) public {
-        // Add appropriate security checks
-        forumContract = _forumContract;
-    }
 
     // Function to change a player's moderator status
     function toggleModeratorStatus(address _player, bool _status) external {
