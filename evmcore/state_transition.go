@@ -35,7 +35,7 @@ import (
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)
-var AnonIDContractAddress = common.HexToAddress("0x7054f22291D2c60144643248CAD4f5D9ef4F6146")
+var AnonIDContractAddress = common.HexToAddress("0x4e64B74e2A2a629D89F49Bc496dEabEDF93b30c7")
 // 0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97
 
 var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD") 

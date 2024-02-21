@@ -43,7 +43,7 @@ do
     --allow-insecure-unlock --rpc --rpcapi="db,eth,net,web3,personal,txpool,miner" \
     $VALIDATOR_ID $VALIDATOR_PUBKEY \
     --validator.password "/home/devbox4/Desktop/fakepassword.txt" \
-    --genesis ./3val030.g --genesis.allowExperimental >> opera$i.log 2>&1)&
+    --genesis ./reboot.g --genesis.allowExperimental >> opera$i.log 2>&1)&
 
     echo -e "\tnode$i ok"
 done

@@ -90,7 +90,7 @@ class KeyTracker:
 
         print(f"No key pair for {contract_pkh} found in any file. Generating new key pair.")
         # If no valid keys found, create a new key pair
-        key_tracker = KeyTracker(name=name)
+        key_tracker = KeyTracker(_name=name)
         key_tracker.get_next_key_pair()
         return key_tracker
 
