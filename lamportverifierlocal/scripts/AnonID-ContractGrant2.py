@@ -7,7 +7,7 @@ import hashlib
 import base64
 from web3 import Web3
 from web3.exceptions import InvalidAddress
-from brownie import network, web3, accounts, Wei, AnonIDContract, Contract
+from brownie import network, web3, accounts, Wei, AnonIDContract, LamportBase2, Contract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_utils import encode_hex #, encode_single
@@ -108,7 +108,11 @@ class LamportTest:
         print('init done')
 
     def get_pkh_list(self, contract, privilege_level):
-        contract_pkh = str(contract.getPKHsByPrivilege(privilege_level))
+        with open('contract_LamportBase2.txt', 'r') as file:
+            contract_address = file.read().strip()
+        contract2 = LamportBase2.at(contract_address)
+
+        contract_pkh = str(contract2.getPKHsByPrivilege(privilege_level))
         # gonna need some kind of wait / delay here for primetime
         print(contract_pkh)
         contract_pkh_list = re.findall(r'0x[a-fA-F0-9]+', contract_pkh)

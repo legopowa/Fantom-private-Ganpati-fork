@@ -98,8 +98,9 @@ contract LamportBase2 {
         keyData[newPKH] = newKey;
         emit KeyAdded(keyType, newPKH);
     }
+
     // Search for a key by its PKH, return the key and its position in the keys array
-    function getKeyAndPosByPKH(bytes32 pkh) public view returns (KeyType, bytes32, uint) {
+    function getKeyAndIndexByPKH(bytes32 pkh) public view returns (KeyType, bytes32, uint) {
         Key memory key = keyData[pkh];
         require(key.pkh != 0, "LamportBase: No such key");
 
@@ -152,9 +153,82 @@ contract LamportBase2 {
     // }
 
     bytes32 private lastUsedDeleteKeyHash;
+    uint256 private lastUsedDeleteKeyIndex;
     bytes32 private storedNextPKH;
+    function deleteKeyByIndexStepOne(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        uint256 keyIndex
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(keyIndex)
+        )
+    {
+        // Save the used deleteKeyHash in a global variable
+        lastUsedDeleteKeyIndex = keyIndex;
+        storedNextPKH = nextPKH;
+    }
 
-    function deleteKeyStepOne(
+    function deleteKeyByIndexStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        uint256 keyIndex
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(keyIndex)
+        )
+    {
+        // Calculate the current public key hash (currentPKH)
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        // Check if storedNextPKH is not the same as the current PKH
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+        
+        // Check if the used keyIndex matches the last used keyIndex
+        require(lastUsedDeleteKeyIndex == keyIndex, "LamportBase: Keys do not match");
+        
+        // Check if the keyIndex is valid
+        require(keyIndex < keys.length, "LamportBase: Invalid key index");
+
+        // Proceed with key deletion logic
+        Key memory keyToDelete = keys[keyIndex];
+        require(keyToDelete.keyType != KeyType.DELETED, "LamportBase: Key already deleted");
+
+        // Store the original KeyType
+        KeyType originalKeyType = keyToDelete.keyType;
+
+        // Overwrite the first 7 characters with "de1e7ed" and the rest with random values
+        bytes32 modifiedPKH = 0xde1e7ed000000000000000000000000000000000000000000000000000000000;
+        uint256 randomValue = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+        modifiedPKH ^= bytes32(randomValue); // XOR to keep "de1e7ed" in the first 7 characters
+
+        // Modify the existing entry instead of deleting it
+        keys[keyIndex].pkh = modifiedPKH;
+        keys[keyIndex].keyType = KeyType.DELETED;
+
+        // Update the keyData mapping
+        keyData[modifiedPKH] = keys[keyIndex];
+        delete keyData[keyToDelete.pkh];
+
+        emit KeyModified(originalKeyType, keyToDelete.pkh, modifiedPKH, KeyType.DELETED);
+
+        // Reset the tracking variables
+        lastUsedDeleteKeyIndex = 0;
+        storedNextPKH = bytes32(0);
+    }
+
+
+    function deleteKeyByPKHStepOne(
         bytes32[2][256] calldata currentpub,
         bytes[256] calldata sig,
         bytes32 nextPKH,
@@ -173,76 +247,76 @@ contract LamportBase2 {
         storedNextPKH = nextPKH;
     }
 
-    function deleteKeyStepTwo(
-            bytes32[2][256] calldata currentpub,
-            bytes[256] calldata sig,
-            bytes32 nextPKH,
-            bytes32 confirmDeleteKeyHash
+    function deleteKeyByPKHStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        bytes32 confirmDeleteKeyHash
+    )
+        public
+        onlyLamportMaster(
+            currentpub,
+            sig,
+            nextPKH,
+            abi.encodePacked(confirmDeleteKeyHash)
         )
-            public
-            onlyLamportMaster(
-                currentpub,
-                sig,
-                nextPKH,
-                abi.encodePacked(confirmDeleteKeyHash)
-            )
-        {
-            // Calculate the current public key hash (currentPKH)
-            bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
-            
-            // Check if storedNextPKH is not the same as the current PKH
-            require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
-            
-            // Check if the used deleteKeyHash matches the last used deleteKeyHash
-            require(lastUsedDeleteKeyHash == confirmDeleteKeyHash, "LamportBase: Keys do not match");
-            
-            // Execute the delete key logic
-            // Assuming firstMasterPKH and secondMasterPKH are correctly verified and provided
-            bytes32 firstMasterPKH = storedNextPKH; // Placeholder, replace with the actual value
-            bytes32 secondMasterPKH = currentPKH; // Placeholder, replace with the actual value
-            bytes32 targetPKH = confirmDeleteKeyHash;
-            
-            // Check that the two provided keys are master keys
-            require(keyData[firstMasterPKH].keyType == KeyType.MASTER && keyData[secondMasterPKH].keyType == KeyType.MASTER, "LamportBase: Provided keys are not master keys");
-            
-            // Disallow master keys from deleting themselves
-            require(targetPKH != firstMasterPKH && targetPKH != secondMasterPKH, "LamportBase: Master keys cannot delete themselves");
-            
-            // require(keyData[targetPKH].pkh != 0, "LamportBase: No such key (deletion)");
-            // for (uint i = 0; i < keys.length; i++) {
-            //     if (keys[i].pkh == targetPKH) {
-            //         delete keyData[targetPKH];
-            //         keys[i] = keys[keys.length - 1];
-            //         keys.pop();
-            //         emit KeyDeleted(keys[i].keyType, targetPKH);
-            //         break;
-            //     }
-            // }
-            require(keyData[targetPKH].pkh != 0, "LamportBase: No such key (deletion)");
-            for (uint i = 0; i < keys.length; i++) {
-                if (keys[i].pkh == targetPKH) {
+    {
+        // Calculate the current public key hash (currentPKH)
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        // Check if storedNextPKH is not the same as the current PKH
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+        
+        // Check if the used deleteKeyHash matches the last used deleteKeyHash
+        require(lastUsedDeleteKeyHash == confirmDeleteKeyHash, "LamportBase: Keys do not match");
+        
+        // Execute the delete key logic
+        // Assuming firstMasterPKH and secondMasterPKH are correctly verified and provided
+        bytes32 firstMasterPKH = storedNextPKH; // Placeholder, replace with the actual value
+        bytes32 secondMasterPKH = currentPKH; // Placeholder, replace with the actual value
+        bytes32 targetPKH = confirmDeleteKeyHash;
+        
+        // Check that the two provided keys are master keys
+        require(keyData[firstMasterPKH].keyType == KeyType.MASTER && keyData[secondMasterPKH].keyType == KeyType.MASTER, "LamportBase: Provided keys are not master keys");
+        
+        // Disallow master keys from deleting themselves
+        require(targetPKH != firstMasterPKH && targetPKH != secondMasterPKH, "LamportBase: Master keys cannot delete themselves");
+        
+        // require(keyData[targetPKH].pkh != 0, "LamportBase: No such key (deletion)");
+        // for (uint i = 0; i < keys.length; i++) {
+        //     if (keys[i].pkh == targetPKH) {
+        //         delete keyData[targetPKH];
+        //         keys[i] = keys[keys.length - 1];
+        //         keys.pop();
+        //         emit KeyDeleted(keys[i].keyType, targetPKH);
+        //         break;
+        //     }
+        // }
+        require(keyData[targetPKH].pkh != 0, "LamportBase: No such key (deletion)");
+        for (uint i = 0; i < keys.length; i++) {
+            if (keys[i].pkh == targetPKH) {
 
-                    KeyType originalKeyType = keyData[targetPKH].keyType; // Store the original KeyType
-                    // Overwriting the first 7 characters with "de1e7ed" and the rest with random values
-                    bytes32 modifiedPKH = 0xde1e7ed000000000000000000000000000000000000000000000000000000000;
-                    uint256 randomValue = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
-                    modifiedPKH ^= bytes32(randomValue); // XOR to keep "de1e7ed" in the first 7 characters
-                    
-                    // Modify the existing entry instead of deleting it
-                    keyData[targetPKH].pkh = modifiedPKH;
-                    keyData[targetPKH].keyType = KeyType.DELETED; // Set the keyType to DELETED
-                    
-                    emit KeyModified(originalKeyType, targetPKH, modifiedPKH, KeyType.DELETED); // Emitting a new event for modification                    
-                    break;
-                }
+                KeyType originalKeyType = keyData[targetPKH].keyType; // Store the original KeyType
+                // Overwriting the first 7 characters with "de1e7ed" and the rest with random values
+                bytes32 modifiedPKH = 0xde1e7ed000000000000000000000000000000000000000000000000000000000;
+                uint256 randomValue = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+                modifiedPKH ^= bytes32(randomValue); // XOR to keep "de1e7ed" in the first 7 characters
+                
+                // Modify the existing entry instead of deleting it
+                keyData[targetPKH].pkh = modifiedPKH;
+                keyData[targetPKH].keyType = KeyType.DELETED; // Set the keyType to DELETED
+                
+                emit KeyModified(originalKeyType, targetPKH, modifiedPKH, KeyType.DELETED); // Emitting a new event for modification                    
+                break;
             }
-
-
-            
-            // Reset lastUsedDeleteKeyHash
-            lastUsedDeleteKeyHash = bytes32(0);
-            storedNextPKH = bytes32(0);
         }
+
+
+        
+        // Reset lastUsedDeleteKeyHash
+        lastUsedDeleteKeyHash = bytes32(0);
+        storedNextPKH = bytes32(0);
+    }
 
 
 

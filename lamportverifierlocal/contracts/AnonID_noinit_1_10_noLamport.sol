@@ -72,6 +72,7 @@ contract AnonIDContract {
     uint256 private lastUsedFreeGasCap;
     address private lastUsedContractAddress;
     address private lastUsedContractAddressForRevoke;
+    bytes32 private storedNextPKH;
 
 
     uint256 public freeGasCap; // Add this state variable for freeGasFee
@@ -95,7 +96,7 @@ contract AnonIDContract {
     constructor() {
 
         _commissionAddress = 0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9;
-        lamportBase = ILamportBase(0x0759a02f763375305aef8b3afb0051eDe0c0577f);
+        lamportBase = ILamportBase(0x838ebf8372Eca3Aa86c001810Eecc3F7570b5a8E);
     }
 
 
@@ -126,6 +127,8 @@ contract AnonIDContract {
         
         // Proceed with updating the commission
         lastUsedCommission = newCoinCommission;
+        storedNextPKH = nextPKH;
+
     }
 
     function setCoinCommissionStepTwo(
@@ -136,6 +139,10 @@ contract AnonIDContract {
     )
         public
     {
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+
         // Convert the new commission to bytes and pass it to performLamportMasterCheck
         bytes memory prepacked = abi.encodePacked(newCoinCommission);
         
@@ -146,7 +153,7 @@ contract AnonIDContract {
             nextPKH, 
             prepacked
         );
-        
+
         // Require that the Lamport Master check passes
         require(lamportCheckPassed, "Lamport Master validation failed");
 
@@ -159,6 +166,8 @@ contract AnonIDContract {
 
         // Reset the temporary variable
         lastUsedCommission = 0;
+        storedNextPKH = bytes32(0);
+
         emit CommissionSet(newCoinCommission);
     }
     function commissionAddress() public view returns (address) {
@@ -391,6 +400,7 @@ contract AnonIDContract {
 
         // Save the contract address for the next step
         lastUsedContractAddress = contractAddress;
+        storedNextPKH = nextPKH;
     }
     // Step Two: Apply the permission to the stored contract address
     function grantActivityContractPermissionStepTwo(
@@ -400,6 +410,10 @@ contract AnonIDContract {
     )
         public
     {
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+
         // Convert the last used contract address to bytes and pass it to performLamportMasterCheck
         bytes memory prepacked = abi.encodePacked(lastUsedContractAddress);
 
@@ -438,6 +452,7 @@ contract AnonIDContract {
         require(lamportCheckPassed, "Lamport Master validation failed");
 
         lastUsedContractAddressForRevoke = contractAddress;
+        storedNextPKH = nextPKH;
     }
 
     // Step Two: Revoke the permission for the stored contract address
@@ -448,6 +463,11 @@ contract AnonIDContract {
     )
         public
     {
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+
+        
         // Convert the last used contract address for revoking to bytes and pass it to performLamportMasterCheck
         bytes memory prepacked = abi.encodePacked(lastUsedContractAddressForRevoke);
 
@@ -462,6 +482,9 @@ contract AnonIDContract {
         require(lamportCheckPassed, "Lamport Master validation failed");
 
         isContractPermitted[lastUsedContractAddressForRevoke] = false;
+        storedNextPKH = bytes32(0);
+
+
         emit ContractPermissionRevoked(lastUsedContractAddressForRevoke);
     }
     
@@ -485,6 +508,8 @@ contract AnonIDContract {
 
         // Save the hash of the new commission address
         lastUsedCommissionAddressHash = keccak256(abi.encodePacked(newCommissionAddress));
+        storedNextPKH = nextPKH;
+
     }
 
     // Step 2: Verify and set the commissionAddress
@@ -494,6 +519,11 @@ contract AnonIDContract {
         bytes32 nextPKH,
         address newCommissionAddress
     ) public {
+
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+
         // Convert the new commission address to bytes and pass it to performLamportMasterCheck
         bytes memory prepacked = abi.encodePacked(newCommissionAddress);
 
@@ -515,6 +545,7 @@ contract AnonIDContract {
 
         // Update the commission address
         _commissionAddress = newCommissionAddress;
+        storedNextPKH = bytes32(0);
 
         // Emit an event if needed
         // emit CommissionAddressSet(newCommissionAddress);
@@ -538,8 +569,36 @@ contract AnonIDContract {
 
         // Save the hash of the bytecode in a global variable
         lastUsedBytecodeHash = bytecodeKeccak;
+        storedNextPKH = nextPKH;
+
     }
     function createContractStepTwo(
+        bytes32[2][256] calldata currentpub,
+        bytes[256] calldata sig,
+        bytes32 nextPKH,
+        bytes32 bytecodeKeccak
+    ) public {
+        // Perform the Lamport Master check
+        bool lamportCheckPassed = lamportBase.performLamportMasterCheck(
+            currentpub, 
+            sig, 
+            nextPKH, 
+            abi.encodePacked(bytecodeKeccak)
+        );
+
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
+
+        require(lamportCheckPassed, "Lamport Master validation failed");
+
+        // Save the hash of the bytecode in a global variable
+        lastUsedBytecodeHash = bytecodeKeccak;
+        storedNextPKH = bytes32(0);
+
+    }
+
+    function createContractStepThree(
         bytes memory bytecode
     ) public returns (address) {
         // Verify bytecode hash matches
@@ -599,6 +658,8 @@ contract AnonIDContract {
 
         // Save the new free gas cap in a global variable
         lastUsedFreeGasCap = _newCap;
+        storedNextPKH = nextPKH;
+
     }
 
 
@@ -615,12 +676,17 @@ contract AnonIDContract {
             nextPKH, 
             abi.encodePacked(lastUsedFreeGasCap)
         );
+        bytes32 currentPKH = keccak256(abi.encodePacked(currentpub));
+        
+        require(currentPKH != storedNextPKH, "LamportBase: Cannot use the same keychain twice for this function");
 
         require(lamportCheckPassed, "Lamport Master validation failed");
 
         // Apply the new free gas cap
         freeGasCap = lastUsedFreeGasCap;
         emit FreeGasCapSet(lastUsedFreeGasCap);
+        storedNextPKH = bytes32(0);
+
     }
 
 }

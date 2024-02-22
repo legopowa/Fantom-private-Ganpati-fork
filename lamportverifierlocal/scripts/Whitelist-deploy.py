@@ -1,4 +1,4 @@
-from brownie import accounts, WhitelistTest#, firewallet
+from brownie import accounts, WhitelistTest, LamportBase2#, firewallet
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_account import Account

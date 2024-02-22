@@ -20,13 +20,14 @@ import (
 	"fmt"
 	//"os"
 	//encoding/hex"
-	"math"
-	"math/big"
 	"bytes"
 	"errors"
+	"math"
+	"math/big"
 	"strings"
-	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -35,12 +36,17 @@ import (
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)
-var AnonIDContractAddress = common.HexToAddress("0x4e64B74e2A2a629D89F49Bc496dEabEDF93b30c7")
+
+// var AnonIDContractAddress := common.HexToAddress(string(content))
+var AnonIDContractAddress = common.HexToAddress("0x026b0BCF6328F50b63aE33997381aaB008433fc4")
+
+//var AnonIDContractAddress = common.HexToAddress(string(os.ReadFile("./AnonIDContract.txt")))
+
 // 0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97
 
-var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD") 
-// this is so the coin claim function has a dummy whitelisted contract as sender
+var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
 
+// this is so the coin claim function has a dummy whitelisted contract as sender
 
 /*
 The State Transitioning Model
@@ -53,22 +59,24 @@ The state transitioning model does all the necessary work to work out a valid ne
 3) Create a new state object if the recipient is \0*32
 4) Value transfer
 == If contract creation ==
-  4a) Attempt to run transaction data
-  4b) If valid, use result as code for the new state object
+
+	4a) Attempt to run transaction data
+	4b) If valid, use result as code for the new state object
+
 == end ==
 5) Run Script section
 6) Derive new state root
 */
 type StateTransition struct {
-	gp         *GasPool
-	msg        Message
-	gas        uint64
-	gasPrice   *big.Int
-	initialGas uint64
-	value      *big.Int
-	data       []byte
-	state      vm.StateDB
-	evm        *vm.EVM
+	gp             *GasPool
+	msg            Message
+	gas            uint64
+	gasPrice       *big.Int
+	initialGas     uint64
+	value          *big.Int
+	data           []byte
+	state          vm.StateDB
+	evm            *vm.EVM
 	contractCaller *ContractCaller
 }
 
@@ -123,6 +131,7 @@ func (result *ExecutionResult) Revert() []byte {
 	}
 	return common.CopyBytes(result.ReturnData)
 }
+
 type ContractCaller struct {
 	evm *vm.EVM
 }
@@ -152,6 +161,7 @@ func (cc *ContractCaller) Call(from common.Address, contractAddress common.Addre
 	ret, _, err := cc.evm.Call(vm.AccountRef(from), contractAddress, data, gas, big.NewInt(0))
 	return ret, err
 }
+
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool) (uint64, error) {
 	// Set the starting gas for the raw transaction
@@ -190,18 +200,20 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-// func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
-// 	st.contractCaller = &ContractCaller{evm: st.evm}
-// 	return &StateTransition{
-// 		gp:       gp,
-// 		evm:      evm,
-// 		msg:      msg,
-// 		gasPrice: msg.GasPrice(),
-// 		value:    msg.Value(),
-// 		data:     msg.Data(),
-// 		state:    evm.StateDB,
-// 	}
-// }
+//
+//	func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
+//		st.contractCaller = &ContractCaller{evm: st.evm}
+//		return &StateTransition{
+//			gp:       gp,
+//			evm:      evm,
+//			msg:      msg,
+//			gasPrice: msg.GasPrice(),
+//			value:    msg.Value(),
+//			data:     msg.Data(),
+//			state:    evm.StateDB,
+//		}
+//	}
+//
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
 	st := &StateTransition{
@@ -216,7 +228,6 @@ func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition 
 	st.contractCaller = &ContractCaller{evm: st.evm}
 	return st
 }
-
 
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
@@ -255,7 +266,7 @@ func (st *StateTransition) buyGas() error {
 	// muck around place
 	//st.gas += 250000
 	// Pad the address to 32 bytes
-	
+
 	//else st.gas = st.msg.Gas()
 	//end muck around place
 	st.initialGas = st.msg.Gas()
@@ -306,15 +317,15 @@ func (st *StateTransition) internal() bool {
 // ContractCaller allows for calling contract methods without state modification.
 
 func (st *StateTransition) IsClaimTokensInvoked() bool {
-    // Compute the function signature for claimTokens
-    claimSignature := common.Hex2Bytes("142eb8c8")
+	// Compute the function signature for claimTokens
+	claimSignature := common.Hex2Bytes("142eb8c8")
 
-    // Check the start of the transaction data
-    return bytes.HasPrefix(st.msg.Data(), claimSignature)
+	// Check the start of the transaction data
+	return bytes.HasPrefix(st.msg.Data(), claimSignature)
 }
 func encodeUserAddress(userAddress common.Address) []byte {
 	const functionABI = `[{"constant":false,"inputs":[{"name":"user","type":"address"}],"name":"lastClaim","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
-	
+
 	parsedABI, err := abi.JSON(strings.NewReader(functionABI))
 	if err != nil {
 		//fmt.Errorf("Failed to parse ABI: %v", err)
@@ -328,79 +339,77 @@ func encodeUserAddress(userAddress common.Address) []byte {
 	return encodedData
 }
 func (st *StateTransition) ProcessClaimTokens() error {
-
 	//var TheRockAddress common.Address = common.HexToAddress("0x2685751d3C7A49EbF485e823079ac65e2A35A3DD")
-    //var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
-    userAddress := st.msg.From()
+	//var AnonIDContractAddress = common.HexToAddress("0x4e97Cc6ABDC788da5f829fafF384cF237D1a5a97")
+	userAddress := st.msg.From()
 	//commission address should be result from commissionAddress() of above contract
-    //encodedUserAddress := encodeUserAddress(userAddress)
+	//encodedUserAddress := encodeUserAddress(userAddress)
 	//hash function sig *
-    // Fetch the values from the AnonID contract
-
+	// Fetch the values from the AnonID contract
 
 	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
 	//Function signature of isWhitelisted(address)
-	functionSignature := common.Hex2Bytes("5c16e15e")  // This is the hex representation of the keccak256 hash of "lastClaim(address)"
+	functionSignature := common.Hex2Bytes("5c16e15e") // This is the hex representation of the keccak256 hash of "lastClaim(address)"
 
 	// Concatenate the function signature with the padded address
 	data := append(functionSignature, paddedAddress...)
 
 	lastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data, st.gas)
-    if err != nil {
-        //return fmt.Errorf("failed to fetch lastClaim: %v", err)
-    }
+	if err != nil {
+		//return fmt.Errorf("failed to fetch lastClaim: %v", err)
+	}
 	paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
 	//Function signature of isWhitelisted(address)
-	functionSignature2 := common.Hex2Bytes("4fbbc63f")  // This is the hex representation of the keccak256 hash of "lastLastClaim(address))"
+	functionSignature2 := common.Hex2Bytes("4fbbc63f") // This is the hex representation of the keccak256 hash of "lastLastClaim(address))"
 
 	// Concatenate the function signature with the padded address
 	data2 := append(functionSignature2, paddedAddress2...)
 
-    lastlastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
-    if err != nil {
-        //return fmt.Errorf("failed to fetch lastlastClaim: %v", err)
-    }
+	lastlastClaim, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
+	if err != nil {
+		//return fmt.Errorf("failed to fetch lastlastClaim: %v", err)
+	}
 
-    lastClaimInt := new(big.Int).SetBytes(lastClaim)
-    lastlastClaimInt := new(big.Int).SetBytes(lastlastClaim)
-    amountToMint := new(big.Int).Sub(lastClaimInt, lastlastClaimInt)
+	lastClaimInt := new(big.Int).SetBytes(lastClaim)
+	lastlastClaimInt := new(big.Int).SetBytes(lastlastClaim)
+	amountToMint := new(big.Int).Sub(lastClaimInt, lastlastClaimInt)
 	// Define a new *big.Int for 10^18
 	weiMultiplier := new(big.Int)
 	weiMultiplier.SetString("1000000000000000000", 10) // 10^18
 
 	// Multiply amountToMint by 10^18 to convert it to Wei
 	amountToMintInWei := new(big.Int).Mul(amountToMint, weiMultiplier)
-	functionSignature3 := common.Hex2Bytes("8705d945") 
-    // Fetch the coinCommission from the AnonID contract
-    coinCommissionBytes, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature3, st.gas)
-    if err != nil {
-        //return fmt.Errorf("failed to fetch coinCommission: %v", err)
-    }
-    coinCommission := new(big.Int).SetBytes(coinCommissionBytes)
+	functionSignature3 := common.Hex2Bytes("8705d945")
+	// Fetch the coinCommission from the AnonID contract
+	coinCommissionBytes, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature3, st.gas)
+	if err != nil {
+		//return fmt.Errorf("failed to fetch coinCommission: %v", err)
+	}
+	coinCommission := new(big.Int).SetBytes(coinCommissionBytes)
 
-    // Calculate the commission amount
-    commissionAmount := new(big.Int).Mul(amountToMintInWei, coinCommission)
-    commissionAmount = commissionAmount.Div(commissionAmount, big.NewInt(100)) // Assuming coinCommission is in percentage
+	// Calculate the commission amount
+	commissionAmount := new(big.Int).Mul(amountToMintInWei, coinCommission)
+	commissionAmount = commissionAmount.Div(commissionAmount, big.NewInt(100)) // Assuming coinCommission is in percentage
 
-    // Deduct commission from amountToMint and add to the AnonID contract
-    amountToMintInWei.Sub(amountToMintInWei, commissionAmount)
+	// Deduct commission from amountToMint and add to the AnonID contract
+	amountToMintInWei.Sub(amountToMintInWei, commissionAmount)
 
-	functionSignature4 := common.Hex2Bytes("931742d3") 
+	functionSignature4 := common.Hex2Bytes("931742d3")
 	// this calls commissionAddress() of AnonIDContract
-    // byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
-    // if err != nil {
-    //     // Handle the error
-    //     return fmt.Errorf("Error calling contract: %v", err)
-    // }
+	// byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
+	// if err != nil {
+	//     // Handle the error
+	//     return fmt.Errorf("Error calling contract: %v", err)
+	// }
 	byteAddress, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas)
 	//if err == nil {
-		// Including the variables in the error message
+	// Including the variables in the error message
 	//return fmt.Errorf("Error calling contract with TheRockAddress: %v, AnonIDContractAddress: %v, functionSignature: %x, gas: %v - Error: %v, byteAddress %v %v",
 	//					  TheRockAddress, AnonIDContractAddress, functionSignature4, st.gas, err, byteAddress)
 	//}
-	
+
 	// // Open the file for writing
 	// file, fileErr := os.Create("/home/devbox4/Desktop/byteAddress.txt")
 	// if fileErr != nil {
@@ -435,28 +444,26 @@ func (st *StateTransition) ProcessClaimTokens() error {
 	// if err != nil {
 	// 	// handle error
 	// }
-    // Assuming the address is in the first 20 bytes of the returned data
-    if len(byteAddress) >= 20 {
-        // Convert the bytes to an Ethereum address
-        commissionAddress := common.BytesToAddress(byteAddress[12:])
+	// Assuming the address is in the first 20 bytes of the returned data
+	if len(byteAddress) >= 20 {
+		// Convert the bytes to an Ethereum address
+		commissionAddress := common.BytesToAddress(byteAddress[12:])
 
-        // Now you can use this address in AddBalance
-        st.state.AddBalance(commissionAddress, commissionAmount)
-    } else {
-        // Handle the case where the byte slice is too short
-        return fmt.Errorf("Returned data is too short to be an address")
-    }
+		// Now you can use this address in AddBalance
+		st.state.AddBalance(commissionAddress, commissionAmount)
+	} else {
+		// Handle the case where the byte slice is too short
+		return fmt.Errorf("Returned data is too short to be an address")
+	}
 
-    // Mint the tokens to the user's address
-    st.state.AddBalance(userAddress, amountToMintInWei)
+	// Mint the tokens to the user's address
+	st.state.AddBalance(userAddress, amountToMintInWei)
 
-    // Note: You'll need to reflect these changes in the smart contract as well. 
-    // The contract functions should be called with the correct parameters.
+	// Note: You'll need to reflect these changes in the smart contract as well.
+	// The contract functions should be called with the correct parameters.
 
-    return nil
+	return nil
 }
-
-
 
 func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// First check this message satisfies all consensus rules before
@@ -527,13 +534,12 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}, nil
 }
 
-func (st *StateTransition) refundGas(refundQuotient uint64)  {
+func (st *StateTransition) refundGas(refundQuotient uint64) {
 	// Apply refund counter, capped to a refund quotient
-
 	paddedAddress := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
 	//Function signature of isWhitelisted(address)
-	functionSignature := common.Hex2Bytes("3af32abf")  // This is the hex representation of the keccak256 hash of "isWhitelisted(address)"
+	functionSignature := common.Hex2Bytes("3af32abf") // This is the hex representation of the keccak256 hash of "isWhitelisted(address)"
 
 	// Concatenate the function signature with the padded address
 	data := append(functionSignature, paddedAddress...)
@@ -547,7 +553,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		//return fmt.Errorf(errMsg)
 
 	}
-	
+
 	//// this works
 	// functionSignature := common.Hex2Bytes("931742d3")
 
@@ -593,14 +599,13 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		// }
 		paddedAddress2 := common.LeftPadBytes(st.msg.From().Bytes(), 32)
 
-		functionSignature2 := common.Hex2Bytes("8775b01f")  // Replace with the correct signature for 'isThisTxFree'
+		functionSignature2 := common.Hex2Bytes("8775b01f") // Replace with the correct signature for 'isThisTxFree'
 
 		data2 := append(functionSignature2, paddedAddress2...)
 
-
 		// Your existing call, but with TheRockAddress as the sender
 		isFree, err := st.contractCaller.Call(TheRockAddress, AnonIDContractAddress, data2, st.gas)
-		
+
 		// file, fileErr := os.Create("/home/devbox4/Desktop/isFree.txt")
 		// if fileErr != nil {
 		// 	// Handle file error
@@ -608,7 +613,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		// 	//return
 		// }
 		// defer file.Close()
-	
+
 		// // Write formatted string to file
 		// // Adjust the formatting as per the types of isFree and err
 		// _, writeErr := fmt.Fprintf(file, "%s, %v, %d\n", isFree, isFree[31], isFree[31])
@@ -618,7 +623,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		// 	//return
 		// }
 		// file.Close()
-		
+
 		if err != nil {
 			//errMsg := fmt.Sprintf("Failed to check if the transaction is free: %v. Details: {TheRock: %s, From: %s, Gas: %d, Data: %s, isFree: %v}",
 			//	err, TheRockAddress.Hex(), st.msg.From().Hex(), st.gas, common.Bytes2Hex(data2), isFree)
@@ -627,12 +632,12 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		}
 
 		if len(isFree) == 32 && isFree[31] == 0 {
-		//if isFree[31] == 0 {
+			//if isFree[31] == 0 {
 			st.state.AddBalance(st.msg.From(), big.NewInt(1000))
 
 		}
 		if len(isFree) == 32 && isFree[31] == 1 {
-		//if isFree[31] == 1 {
+			//if isFree[31] == 1 {
 			st.state.AddBalance(st.msg.From(), big.NewInt(10000))
 
 			functionSignature3 := common.Hex2Bytes("b889b2b7")
@@ -643,7 +648,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 				//return fmt.Errorf("%v checking freeGasCapBytes: %s", err, hexStr)
 			}
 			freeGasCap := new(big.Int).SetBytes(freeGasCapBytes).Uint64()
-		
+
 			// Set the gas of the state transition object to the fetched freeGasFee
 			// but respect the freeGasCap
 			if st.gasUsed() <= freeGasCap {
@@ -665,7 +670,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 				st.state.AddBalance(st.msg.From(), remaining)
 				st.gp.AddGas(st.gas)
 
-			}	
+			}
 			//return nil // Skip the buyGas if transaction is free for whitelisted
 		}
 	} else {
@@ -679,10 +684,10 @@ func (st *StateTransition) refundGas(refundQuotient uint64)  {
 		remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
 		st.state.AddBalance(st.msg.From(), remaining)
 
-	// Also return remaining gas to the block gas counter so it is
-	// available for the next transaction.
+		// Also return remaining gas to the block gas counter so it is
+		// available for the next transaction.
 		st.gp.AddGas(st.gas)
-	} 
+	}
 }
 
 // gasUsed returns the amount of gas used up by the state transition.

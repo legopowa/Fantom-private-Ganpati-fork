@@ -7,7 +7,7 @@ import hashlib
 import base64
 from web3 import Web3
 from web3.exceptions import InvalidAddress
-from brownie import network, web3, accounts, Wei, AnonIDContract, Contract
+from brownie import network, web3, accounts, Wei, AnonIDContract, LamportBase2# Contract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
 from eth_utils import encode_hex #, encode_single
@@ -154,7 +154,12 @@ class LamportTest:
         print('init done')
 
     def get_pkh_list(self, contract, privilege_level):
-        contract_pkh = str(contract.getPKHsByPrivilege(privilege_level))
+
+        with open('contract_LamportBase2.txt', 'r') as file:
+            contract_address = file.read().strip()
+        contract2 = LamportBase2.at(contract_address)
+
+        contract_pkh = str(contract2.getPKHsByPrivilege(privilege_level))
         # gonna need some kind of wait / delay here for primetime
         print(contract_pkh)
         contract_pkh_list = re.findall(r'0x[a-fA-F0-9]+', contract_pkh)
@@ -237,7 +242,7 @@ class LamportTest:
         #pairs = generate_address_value_pairs(10)
         #packed_pairs = solidity_pack_pairs(pairs)
         #_newCap = int(300000)
-        numToBroadcast = 890000
+        numToBroadcast = 1200000
         pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 
@@ -252,7 +257,7 @@ class LamportTest:
             sig,
             nextpkh,
             numToBroadcast,
-            {'from': brownie_account, 'gas_limit': 850000}
+            {'from': brownie_account, 'gas_limit': 1100000}
 
         )
         #exit()
@@ -264,7 +269,7 @@ class LamportTest:
         nextpkh = self.k2.pkh_from_public_key(next_keys.pub)
 
         #paddressToBroadcast = '0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9'
-        numToBroadcast = 890000
+        #numToBroadcast = 1200000
         pnumToBroadcast = numToBroadcast.to_bytes(4, 'big')
         paddednumToBroadcast = solidity_pack_value_bytes(pnumToBroadcast)
 
@@ -279,7 +284,7 @@ class LamportTest:
             current_keys.pub,
             sig,
             nextpkh,
-            {'from': brownie_account, 'gas_limit': 850000}
+            {'from': brownie_account, 'gas_limit': 1100000}
 
         )
 
