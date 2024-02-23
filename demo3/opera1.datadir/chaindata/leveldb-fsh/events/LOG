@@ -260,3 +260,5 @@
 01:47:12.879397 table@compaction committed F-1 S-439B Ke·0 D·2 T·126.154015ms
 01:47:12.879589 table@remove removed @40
 01:47:12.879708 table@remove removed @39
+20:31:35.886332 db@close closing
+20:31:35.931495 db@close done T·45.143391ms
