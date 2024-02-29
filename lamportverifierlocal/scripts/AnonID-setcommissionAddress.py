@@ -10,8 +10,8 @@ from web3.exceptions import InvalidAddress
 from brownie import network, web3, accounts, Wei, AnonIDContract, Contract
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
-from eth_utils import encode_hex #, encode_single
-from eth_abi import encode_single
+from eth_utils import encode_hex #, encode
+from eth_abi import encode
 from Crypto.Hash import keccak
 from typing import List
 import json
@@ -27,7 +27,7 @@ from offchain.KeyTracker_ import KeyTracker
 from offchain.soliditypack import solidity_pack_value_bytes, solidity_pack_value, pack_keys, encode_packed_2d_list, solidity_pack_bytes, encode_packed, solidity_pack_pairs, solidity_pack, solidity_pack_bytes, solidity_pack_array
 from offchain.Types import LamportKeyPair, Sig, PubPair
 from offchain.functions import hash_b, sign_hash, verify_signed_hash
-from eth_abi import encode_abi, encode_single
+from eth_abi import encode, encode
 from binascii import crc32, hexlify
 import binascii
 from offchain.crc import compute_crc
@@ -62,7 +62,7 @@ def custom_encode_packed(address, integer):
     address_bytes = bytes(Web3.toBytes(hexstr=address))
 
     # Convert the integer to bytes and pad with zeroes
-    integer_bytes = encode_single('uint', integer)
+    integer_bytes = encode('uint', integer)
 
     # Concatenate everything together
     result = address_bytes + b'\0' * 12 + integer_bytes + b'\0' * 12

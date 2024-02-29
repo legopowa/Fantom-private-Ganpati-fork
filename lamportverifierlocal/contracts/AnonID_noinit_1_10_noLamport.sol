@@ -57,6 +57,11 @@ contract AnonIDContract {
     mapping(address => uint256) public lastClaim;
     mapping(address => uint256) public lastLastClaim;
     mapping(address => bytes32) public addressToHashedID;
+    mapping(bytes32 => address) public hashedIDToAddress;
+    mapping(bytes32 => uint256) private lastUpdateByHashedID;
+    mapping(address => uint256) private lastMinutesUpdateTimestamp;
+
+
 
     event MinutesPlayedIncremented(address indexed user, uint256 _minutes);
     event ClaimedGP(address indexed userAddress, uint256 lastClaimValue, uint256 minutesPlayed);
@@ -96,7 +101,7 @@ contract AnonIDContract {
     constructor() {
 
         _commissionAddress = 0xfd003CA44BbF4E9fB0b2fF1a33fc2F05A6C2EFF9;
-        lamportBase = ILamportBase(0x838ebf8372Eca3Aa86c001810Eecc3F7570b5a8E);
+        lamportBase = ILamportBase(0x104b201C82f6a7AFb6132299079eb9119AdD30Dc);
     }
 
 
@@ -193,7 +198,6 @@ contract AnonIDContract {
         return 0; // Player is not currently active
     }
 
-
     function addToWhitelist(address _address, string memory anonID) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify whitelist");
         
@@ -202,19 +206,59 @@ contract AnonIDContract {
         // Ensure the address is not already whitelisted
         require(!whitelist[_address], "Address already whitelisted");
 
-         // Initialize the hourly transaction quota for the address
-        hourlyTxQuota[_address] = 5; // Initial quota set to 10, adjust as needed
+        // Ensure the hashedID is not already associated with another address
+        require(hashedIDToAddress[hashedID] == address(0) || hashedIDToAddress[hashedID] == _address, "hashedID already in use");
+
+        // Initialize the hourly transaction quota for the address
+        hourlyTxQuota[_address] = 5; // Adjust as needed
 
         // Whitelist the address
         whitelist[_address] = true;
 
-        // Update the address to hashedID mapping
+        // Update the address to hashedID mapping and the reverse mapping
         addressToHashedID[_address] = hashedID;
+        hashedIDToAddress[hashedID] = _address;
 
         emit Whitelisted(_address, hashedID);
-
     }
 
+
+    function updateAnonID(string memory anonID, address newAddress) external {
+
+        require(isContractPermitted[msg.sender], "Not permitted to modify whitelist");
+        require(newAddress != address(0), "New address cannot be zero address");
+        bytes32 hashedID = keccak256(abi.encodePacked(anonID));
+        
+        // Ensure that the hashedID is already registered
+        require(hashedIDToAddress[hashedID] != address(0), "hashedID not registered");
+        
+        // Ensure that only the current address associated with the hashedID can update it
+        require(msg.sender == hashedIDToAddress[hashedID], "Only current address can update");
+        
+        // Check for the day-long timeout
+        uint256 lastUpdate = lastUpdateByHashedID[hashedID];
+        require(lastUpdate == 0 || block.timestamp - lastUpdate >= 1 days, "Update timeout not yet passed");
+        
+        // Make sure the new address is not already associated with a different hashedID
+        require(addressToHashedID[newAddress] == 0 || addressToHashedID[newAddress] == hashedID, "New address already associated with a different hashedID");
+
+        // Remove the old address from the whitelist
+        address oldAddress = hashedIDToAddress[hashedID];
+        whitelist[oldAddress] = false;
+        delete addressToHashedID[oldAddress];
+        
+        // Update the whitelist and mappings with the new address
+        whitelist[newAddress] = true;
+        addressToHashedID[newAddress] = hashedID;
+        hashedIDToAddress[hashedID] = newAddress;
+        
+        // Update the last update time
+        lastUpdateByHashedID[hashedID] = block.timestamp;
+        
+        // Emit events as necessary
+        emit RemovedFromWhitelist(oldAddress);
+        emit Whitelisted(newAddress, hashedID);
+    }
 
     function setHourlyTxQuota(address _address, uint256 _quota) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify hourly transaction quota");
@@ -333,12 +377,34 @@ contract AnonIDContract {
 
     }
 
-    function incrementMinutesPlayed(address user, uint256 _minutes) external {
+    function incrementMinutesPlayed(address user, uint256 __minutes) external {
         require(isContractPermitted[msg.sender], "Not permitted to modify minutes played");
-        minutesPlayed[user] += _minutes;
-        emit MinutesPlayedIncremented(user, _minutes);
+        require(__minutes <= 200, "Cannot add more than 200 minutes at a time");
 
+        uint256 currentTime = block.timestamp;
+        uint256 lastUpdate = lastMinutesUpdateTimestamp[user];
+        // Calculate the time difference in minutes since the last update.
+        uint256 timeDifference = (currentTime - lastUpdate) / 60;
+
+        if (__minutes == 200) {
+            // For the maximum allowed increment, ensure at least 198 minutes have passed.
+            require(timeDifference >= 198, "Insufficient time passed for large increment");
+        } else if (__minutes > 5 && __minutes < 200) {
+            // For intermediate increments, allow 2 minutes less than the increment itself.
+            require(timeDifference >= __minutes - 2, "Insufficient time passed for this increment");
+        } else if (__minutes <= 5) {
+            // For small increments up to 5 minutes, allow updates every 3 minutes to provide wiggle room.
+            require(timeDifference >= 3, "Update frequency too high for small increment");
+        }
+
+        // Update the minutes played.
+        minutesPlayed[user] += __minutes;
+        // Update the last update timestamp to the current time.
+        lastMinutesUpdateTimestamp[user] = currentTime;
+
+        emit MinutesPlayedIncremented(user, __minutes);
     }
+
 
     function updateLastPlayed(address _address, string memory _gameId) external {
         require(isContractPermitted[msg.sender], "Not permitted to update last played");
@@ -615,31 +681,6 @@ contract AnonIDContract {
 
         return newContract;
     }
-    // function createContractStepTwo(
-    //     bytes32[2][256] calldata currentpub,
-    //     bytes[256] calldata sig,
-    //     bytes32 nextPKH,
-    //     bytes memory bytecode
-    // )
-    //     public
-    //     onlyLamportMaster(
-    //         currentpub,
-    //         sig,
-    //         nextPKH,
-    //         abi.encodePacked(bytecode)
-    //     )
-    //     returns (address)
-    // {
-    //      // Verify bytecode hash matches
-    //     require(keccak256(bytecode) == lastUsedBytecodeHash, "Bytecode does not match previously provided bytecode.");
-    //     address newContract;
-    //     assembly {
-    //         newContract := create(0, add(bytecode, 0x20), mload(bytecode))
-    //     }
-    //     require(newContract != address(0), "Contract creation failed");
-    //     return newContract;
-    // }
-    // Step One: Store the new value temporarily
     function setFreeGasCapStepOne(
         bytes32[2][256] calldata currentpub,
         bytes[256] calldata sig,

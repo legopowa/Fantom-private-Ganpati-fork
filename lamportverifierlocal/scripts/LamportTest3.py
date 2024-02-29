@@ -7,8 +7,8 @@ from web3 import Web3
 from brownie import web3, accounts, Wei, LamportTest2
 from brownie.network import gas_price
 from brownie.network.gas.strategies import LinearScalingStrategy
-from eth_utils import encode_hex #, encode_single
-from eth_abi import encode_single
+from eth_utils import encode_hex #, encode
+from eth_abi import encode
 from Crypto.Hash import keccak
 from typing import List
 import json
@@ -18,7 +18,7 @@ import struct
 from offchain.KeyTracker import KeyTracker
 from offchain.Types import LamportKeyPair, Sig, PubPair
 from offchain.functions import hash_b, sign_hash, verify_signed_hash
-from eth_abi import encode_abi
+from eth_abi import encode
 
 gas_strategy = LinearScalingStrategy("60 gwei", "70 gwei", 1.1)
 
@@ -131,13 +131,13 @@ class LamportTest:
 
             #messageToBroadcast_bytes = messageToBroadcast.encode('utf-8')
 
-            temp = encode_abi(['string'], [messageToBroadcast])
-            #packed = encode_abi(['bytes', 'bytes32'], [temp, nextpkh])
-            callhash = Web3.solidityKeccak(['bytes','bytes32'], [temp, nextpkh]).hex()
-            #callhash = Web3.solidityKeccak(['bytes'], [temp])
+            temp = encode(['string'], [messageToBroadcast])
+            #packed = encode(['bytes', 'bytes32'], [temp, nextpkh])
+            callhash = Web3.solidity_keccak(['bytes','bytes32'], [temp, nextpkh]).hex()
+            #callhash = Web3.solidity_keccak(['bytes'], [temp])
             flattened_pub_keys = list(chain.from_iterable(current_keys.pub))
             types = ['bytes32'] * len(flattened_pub_keys)
-            current_key_hash = Web3.solidityKeccak(types, flattened_pub_keys).hex()
+            current_key_hash = Web3.solidity_keccak(types, flattened_pub_keys).hex()
 
             
             #print(nextpkh)
@@ -183,14 +183,14 @@ class LamportTest:
             #nextpkh_bytes = bytes.fromhex(nextpkh[2:])
             #packed = temp + nextpkh_bytes
 
-            #messageToBroadcast_bytes = encode_single('string', messageToBroadcast)
-            #packed_message = encode_single('string', messageToBroadcast_bytes)# + nextpkh.encode('utf-8'))
+            #messageToBroadcast_bytes = encode('string', messageToBroadcast)
+            #packed_message = encode('string', messageToBroadcast_bytes)# + nextpkh.encode('utf-8'))
             #keccak_hash = keccak.new(digest_bits=256)
             #keccak_hash.update(packed_message)
             #result = keccak_hash.hexdigest()
             #callhash = hash_b(packed)
 
-            #packed = web3.solidityKeccak(['string', 'bytes32'], [messageToBroadcast, nextpkh])
+            #packed = web3.solidity_keccak(['string', 'bytes32'], [messageToBroadcast, nextpkh])
             #packed_int = int(packed.hex(), 16)
             #callhash = hash_b(encode_hex(packed))
             #callhash = int.from_bytes((result), byteorder='big')

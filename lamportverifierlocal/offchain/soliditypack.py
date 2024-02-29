@@ -1,4 +1,4 @@
-from eth_abi import encode_single
+from eth_abi import encode
 from web3 import Web3
 from typing import List
 import codecs
@@ -188,11 +188,11 @@ def encode_packed_2d_list(data):
         for item in sublist:
             # Here we assume that all items are hexadecimal strings.
             # Encode each item individually and add to the result.
-            packed_bytes += encode_single('bytes', bytes.fromhex(item[2:]))  # item[2:] to remove '0x' if present
+            packed_bytes += encode('bytes', bytes.fromhex(item[2:]))  # item[2:] to remove '0x' if present
 
     return Web3.toHex(packed_bytes)
 def keccak256(types: List[str], values: List) -> str:
-    return Web3.solidityKeccak(types, values).hex()
+    return Web3.solidity_keccak(types, values).hex()
 
 def sha256(types: List[str], values: List) -> str:
     packed = solidity_pack(types, values)[2:]
@@ -250,26 +250,26 @@ def encode_packed(*args):
 
         if t == 'bytes':
             # Encode bytes
-            packed_bytes += encode_single(t, bytes.fromhex(v[2:]))
+            packed_bytes += encode(t, bytes.fromhex(v[2:]))
         elif t == 'string':
             # Encode string
-            packed_bytes += encode_single('bytes', v.encode('utf-8'))
+            packed_bytes += encode('bytes', v.encode('utf-8'))
         elif t == 'bool':
             # Encode bool
-            packed_bytes += encode_single('bytes', b'\x01' if v else b'\x00')
+            packed_bytes += encode('bytes', b'\x01' if v else b'\x00')
         elif t == 'address':
             # Encode address
-            packed_bytes += encode_single('bytes', bytes.fromhex(v[2:]))
+            packed_bytes += encode('bytes', bytes.fromhex(v[2:]))
         elif t.startswith('uint'):
             # Encode uint
             if size_n and v > 2**(size_n - 1):
                 raise ValueError(f"{v} exceeds {t}")
-            packed_bytes += encode_single(f"uint{size_n}", v)
+            packed_bytes += encode(f"uint{size_n}", v)
         elif t.startswith('int'):
             # Encode int
             if size_n and abs(v) > 2**(size_n - 1):
                 raise ValueError(f"{v} exceeds {t}")
-            packed_bytes += encode_single(f"int{size_n}", v)
+            packed_bytes += encode(f"int{size_n}", v)
         else:
             raise ValueError(f"Unsupported or invalid type: {t}")
 

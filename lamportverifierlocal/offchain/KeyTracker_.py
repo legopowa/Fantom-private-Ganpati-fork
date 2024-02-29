@@ -25,7 +25,7 @@ class KeyTracker:
     #    packed_pub = Web3.soliditySha3(['bytes32[2][256]'], [pub])
     #    return hash_b(packed_pub.hex())
     def pkh_from_public_key(pub: List[PubPair]) -> str:
-        packed_pub = Web3.solidityKeccak(['bytes32[2][256]'], [pub])
+        packed_pub = Web3.solidity_keccak(['bytes32[2][256]'], [pub])
         return encode_hex(packed_pub)
 
     @property
