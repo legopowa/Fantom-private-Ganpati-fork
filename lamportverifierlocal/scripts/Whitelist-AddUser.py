@@ -260,11 +260,11 @@ class LamportTest:
         #     #nextpkh,
         #     {'from': brownie_account}
         # )
-        OperationResult_filter = _contract.events.OperationResult.createFilter(fromBlock='latest')
+        # OperationResult_filter = _contract.events.OperationResult.createFilter(fromBlock='latest')
 
-        for event in OperationResult_filter.get_all_entries():
-            data = event['args']['success']
-            print(f"Operation Result: {data}")
+        # for event in OperationResult_filter.get_all_entries():
+        #     data = event['args']['success']
+        #     print(f"Operation Result: {data}")
 
 
     # # Addresses of the deployed contracts
@@ -297,7 +297,12 @@ class LamportTest:
         whitelist_events = tx.events['Whitelisted']
         failed_events = tx.events['WhitelistAdditionFailed']
         error_events = tx.events['ErrorCaught']
+        operation_results = tx.events['OperationResult']
 
+        for event in operation_results:
+            success = event['success']
+            message = event['message']  # Assuming the event also includes a 'message' field for success or error message
+            print(f"Operation Result: Success={success}, Message='{message}'")
         # Process success events
         for event in whitelist_events:
             print(f"Address {event['_address']} whitelisted with ID {event['hashedID']}")
